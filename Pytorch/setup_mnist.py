@@ -5,94 +5,144 @@
 ## This program is licenced under the BSD 2-Clause licence,
 ## contained in the LICENCE file in this directory.
 
-import tensorflow as tf
+# import tensorflow as tf
+
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
 import numpy as np
 import os
 import pickle
 import gzip
 import urllib.request
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten
-from tensorflow.keras.layers import Conv2D, MaxPooling2D
-#from tensorflow.keras.utils import np_utils
-from tensorflow.keras.models import load_model
+from torch.nn import Sequential, Conv2d, LeakyReLU, MaxPool2d, Flatten, Linear,\
+                     Softmax, Module
+from torch import from_numpy
 
 def extract_data(filename, num_images):
+    """Read MNIST image file as pytorch tensor."""
     with gzip.open(filename) as bytestream:
         bytestream.read(16)
         buf = bytestream.read(num_images*28*28)
         data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
         data = (data / 255) - 0.5
         data = data.reshape(num_images, 28, 28, 1)
-        return data
+    return from_numpy(data)
 
 def extract_labels(filename, num_images):
+    """Read MNIST label file as pytorch tensor."""
     with gzip.open(filename) as bytestream:
         bytestream.read(8)
         buf = bytestream.read(1 * num_images)
         labels = np.frombuffer(buf, dtype=np.uint8)
-    return (np.arange(10) == labels[:, None]).astype(np.float32)
+    return from_numpy((np.arange(10) == labels[:, None]).astype(np.float32))
 
 class MNIST:
-    def __init__(self):
-        if not os.path.exists("data"):
-            os.mkdir("data")
-            files = ["train-images-idx3-ubyte.gz",
-                     "t10k-images-idx3-ubyte.gz",
-                     "train-labels-idx1-ubyte.gz",
-                     "t10k-labels-idx1-ubyte.gz"]
-            for name in files:
+    def __init__(self, force=False):
+        """Load MNIST dataset, optionally force to download and overwrite."""
+        self.n_train = 60000
+        self.n_test  = 10000
+        self.n_valid = 5000
 
-                urllib.request.urlretrieve('http://yann.lecun.com/exdb/mnist/' + name, "data/"+name)
+        self.force = force
 
-        train_data = extract_data("data/train-images-idx3-ubyte.gz", 60000)
-        train_labels = extract_labels("data/train-labels-idx1-ubyte.gz", 60000)
-        self.test_data = extract_data("data/t10k-images-idx3-ubyte.gz", 10000)
-        self.test_labels = extract_labels("data/t10k-labels-idx1-ubyte.gz", 10000)
+        # Make storage room
+        self.dir = "data"
+        if not os.path.exists(self.dir):
+            os.mkdir(self.dir)
+            self.force = True
 
-        VALIDATION_SIZE = 5000
+        # Get files locally
+        self.mnist_url = "http://yann.lecun.com/exdb/mnist/"
+        self.train_x_path = self.fetch("train-images-idx3-ubyte.gz")
+        self.train_r_path = self.fetch("train-labels-idx1-ubyte.gz")
+        self.test_x_path = self.fetch("t10k-images-idx3-ubyte.gz")
+        self.test_r_path = self.fetch("t10k-labels-idx1-ubyte.gz")
 
-        self.validation_data = train_data[:VALIDATION_SIZE, :, :, :]
-        self.validation_labels = train_labels[:VALIDATION_SIZE]
-        self.train_data = train_data[VALIDATION_SIZE:, :, :, :]
-        self.train_labels = train_labels[VALIDATION_SIZE:]
+        # Get Test data
+        self.test_data = extract_data(self.test_x_path, self.n_test)
+        self.test_labels = extract_labels(self.test_r_path, self.n_test)
 
+        # Get Train data
+        train_data = extract_data(self.train_x_path, self.n_train)
+        train_labels = extract_labels(self.train_r_path, self.n_train)
+        self.train_data = train_data[self.n_valid:, :, :, :]
+        self.train_labels = train_labels[self.n_valid:]
 
-class MNISTModel:
-    def __init__(self, restore = None, session=None, use_log=False):
+        # Get Validation data from training data
+        self.validation_data = train_data[:self.n_valid, :, :, :]
+        self.validation_labels = train_labels[:self.n_valid]
+
+    def fetch(self, file):
+        """Get file from self.url if not already present locally."""
+        path = self.dir+"/"+file
+        if self.force or not os.path.exists(path):
+            urllib.request.urlretrieve(self.mnist_url+file, path)
+        return path
+
+class MNISTModel(Module):
+    def __init__(self, restore=None, use_log=False):
+        """
+        Init MNISTModel with a Convolutional Neural Network.
+
+        Arguments:
+        - restore: supply a loaded Pytorch state dict to reload weights
+        - use_log: bool: output log probability for attack
+        """
+
+        super(MNISTModel, self).__init__()
+
         self.num_channels = 1
         self.image_size = 28
         self.num_labels = 10
 
-        model = Sequential()
+        self.kernel_size = (3,3)
+        self.pool_kernel_size = (2,2)
+        self.relu_slope = 0
 
-        model.add(Conv2D(32, (3, 3),
-                         input_shape=(28, 28, 1)))
-        model.add(Activation('relu'))
-        model.add(Conv2D(32, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+        self.output12 = 32
+        self.output34 = 64
+        self.output56 = 200
+        self.output_flat = 1024
 
-        model.add(Conv2D(64, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(Conv2D(64, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model = [
+            Conv2d(self.num_channels, self.output12, self.kernel_size),
+            LeakyReLU(self.relu_slope),
+            Conv2d(self.output12, self.output12, self.kernel_size),
+            LeakyReLU(self.relu_slope),
+            MaxPool2d(self.pool_kernel_size),
+            #
+            Conv2d(self.output12, self.output34, self.kernel_size),
+            LeakyReLU(self.relu_slope),
+            Conv2d(self.output34, self.output34, self.kernel_size),
+            LeakyReLU(self.relu_slope),
+            MaxPool2d(self.pool_kernel_size),
+            #
+            Flatten(),
+            Linear(self.output_flat, self.output56),
+            LeakyReLU(self.relu_slope),
+            Linear(self.output56, self.output56),
+            LeakyReLU(self.relu_slope),
+            Linear(self.output56, self.num_labels)
+        ]
 
-        model.add(Flatten())
-        model.add(Dense(200))
-        model.add(Activation('relu'))
-        model.add(Dense(200))
-        model.add(Activation('relu'))
-        model.add(Dense(10))
         # output log probability, used for black-box attack
         if use_log:
-            model.add(Activation('softmax'))
-        if restore:
-            model.load_weights(restore)
+            model += [Softmax(dim=-1)]
 
-        self.model = model
+        if restore:
+            try:
+                self.load_state_dict(restore)
+            except:
+                print("Error:", sys.exc_info()[0])
+                print("Make sure restore is a torch.load(PATH) object")
+                raise
+
+        self.model = Sequential(*model)
 
     def predict(self, data):
-        return self.model(data)
+        """Predict output of MNISTModel for input data (batch, dim1, dim2, c)."""
+        assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
+
+        # Reshape data, expect (batch, channel, dim1, dim2)
+        return self.model(data.view(-1, 1, self.image_size, self.image_size))
