@@ -1,0 +1,7 @@
+# lock files
+.~*
+
+# python
+__pycache__/
+
+
