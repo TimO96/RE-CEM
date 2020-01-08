@@ -57,35 +57,35 @@ class AEADEN:
         self.assign_orig_img = torch.empty(shape, dtype=torch.float32)
         self.assign_adv_img = torch.empty(shape, dtype=torch.float32)
         self.assign_adv_img_s = torch.empty(shape, dtype=torch.float32)
-        self.assign_target_lab = torch.empty(batch_size, nun_classes), dtype=torch.float32)
+        self.assign_target_lab = torch.empty((batch_size, nun_classes), dtype=torch.float32)
         self.assign_const = torch.empty(batch_size, dtype=torch.float32) ## ???? origineel
 
 
         """Fast Iterative Soft Thresholding"""
         """--------------------------------"""
         #self.zt = tf.divide(self.global_step, self.global_step+tf.cast(3, tf.float32))
-        self.zt = torch.div(self.global_step, self.global_step+torch.tensor(3, dtype=torch.float32))
-        cond1 = tf.cast(tf.greater(tf.subtract(self.adv_img_s, self.orig_img),self.beta), tf.float32)
-        cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(self.adv_img_s,self.orig_img)),self.beta), tf.float32)
-        cond3 = tf.cast(tf.less(tf.subtract(self.adv_img_s, self.orig_img),tf.negative(self.beta)), tf.float32)
-        upper = tf.minimum(tf.subtract(self.adv_img_s, self.beta), tf.cast(0.5, tf.float32))
-        lower = tf.maximum(tf.add(self.adv_img_s, self.beta), tf.cast(-0.5, tf.float32))
-        self.assign_adv_img = tf.multiply(cond1,upper)+tf.multiply(cond2,self.orig_img)+tf.multiply(cond3,lower)
+        self.zt = self.global_step / (self.global_step + torch.tensor(3, dtype=torch.float32)))
+        cond1 = ((self.adv_img_s - self.orig_img) > self.beta).float32()
+        cond2 = ((torch.abs(self.adv_img_s - self.orig_img)) <= self.beta).float32()
+        cond3 = ((self.adv_img_s - self.orig_img) < -self.beta).float32()
+        upper = torch.min((self.adv_img_s - self.beta), torch.tensor(0.5, dtype=torch.float32))
+        lower = torch.max((self.adv_img_s + self.beta), torch.tensor(-0.5, dtype=torch.float32))
+        self.assign_adv_img = cond1 * upper + cond2 * self.orig_img + cond3 * lower
 
-        cond4=tf.cast(tf.greater(tf.subtract( self.assign_adv_img, self.orig_img),0), tf.float32)
-        cond5=tf.cast(tf.less_equal(tf.subtract( self.assign_adv_img,self.orig_img),0), tf.float32)
+        cond4 = ((self.assign_adv_img - self.orig_img) > 0).float32()
+        cond5 = ((self.assign_adv_img - self.orig_img) <= 0).float32()
         if self.mode == "PP":
-            self.assign_adv_img = tf.multiply(cond5,self.assign_adv_img)+tf.multiply(cond4,self.orig_img)
+            self.assign_adv_img = cond5 * self.assign_adv_img + cond4 * self.orig_img
         elif self.mode == "PN":
-            self.assign_adv_img = tf.multiply(cond4,self.assign_adv_img)+tf.multiply(cond5,self.orig_img)
+            self.assign_adv_img = cond4 * self.assign_adv_img + cond5 * self.orig_img
 
-        self.assign_adv_img_s = self.assign_adv_img+tf.multiply(self.zt, self.assign_adv_img-self.adv_img)
-        cond6=tf.cast(tf.greater(tf.subtract(  self.assign_adv_img_s, self.orig_img),0), tf.float32)
-        cond7=tf.cast(tf.less_equal(tf.subtract(  self.assign_adv_img_s,self.orig_img),0), tf.float32)
+        self.assign_adv_img_s = self.assign_adv_img + self.zt * (self.assign_adv_img-self.adv_img)
+        cond6 = ((self.assign_adv_img_s - self.orig_img) > 0).float32()
+        cond7 = ((self.assign_adv_img_s - self.orig_img) <= 0).float32()
         if self.mode == "PP":
-            self.assign_adv_img_s = tf.multiply(cond7, self.assign_adv_img_s)+tf.multiply(cond6,self.orig_img)
+            self.assign_adv_img_s = cond7 * self.assign_adv_img_s + cond6 * self.orig_img
         elif self.mode == "PN":
-            self.assign_adv_img_s = tf.multiply(cond6, self.assign_adv_img_s)+tf.multiply(cond7,self.orig_img)
+            self.assign_adv_img_s = cond6 * self.assign_adv_img_s + cond7 * self.orig_img
 
 
         self.adv_updater = tf.assign(self.adv_img, self.assign_adv_img)

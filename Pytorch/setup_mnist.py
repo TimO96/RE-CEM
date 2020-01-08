@@ -18,6 +18,7 @@ import urllib.request
 from torch.nn import Sequential, Conv2d, LeakyReLU, MaxPool2d, Flatten, Linear,\
                      Softmax, Module
 from torch import from_numpy
+import sys
 
 def extract_data(filename, num_images):
     """Read MNIST image file as pytorch tensor."""
