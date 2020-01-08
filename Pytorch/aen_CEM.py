@@ -22,6 +22,7 @@ import sys
 import tensorflow as tf
 import torch
 import numpy as np
+import torchvision
 
 
 class AEADEN:
@@ -103,40 +104,45 @@ class AEADEN:
             self.ImgToEnforceLabel_Score_s = model.predict(self.adv_img_s)
 
         # distance to the input data
-        self.L2_dist = tf.reduce_sum(tf.square(self.delta_img),[1,2,3])
-        self.L2_dist_s = tf.reduce_sum(tf.square(self.delta_img_s),[1,2,3])
-        self.L1_dist = tf.reduce_sum(tf.abs(self.delta_img),[1,2,3])
-        self.L1_dist_s = tf.reduce_sum(tf.abs(self.delta_img_s),[1,2,3])
-        self.EN_dist = self.L2_dist + tf.multiply(self.L1_dist, self.beta)
-        self.EN_dist_s = self.L2_dist_s + tf.multiply(self.L1_dist_s, self.beta)
+        self.L2_dist = torch.sum(self.delta_img**2, (1,2,3))
+        self.L2_dist_s = torch.sum(self.delta_img_s**2, (1,2,3))
+        self.L1_dist = torch.sum(torch.abs(self.delta_img), (1,2,3))
+        self.L1_dist_s = torch.sum(torch.abs(self.delta_img_s), (1,2,3))
+        self.EN_dist = self.L2_dist + torch.mul(self.L1_dist, self.beta)
+        self.EN_dist_s = self.L2_dist_s + torch.mul(self.L1_dist_s, self.beta)
 
         # compute the probability of the label class versus the maximum other
-        self.target_lab_score        = tf.reduce_sum((self.target_lab)*self.ImgToEnforceLabel_Score,1)
-        target_lab_score_s           = tf.reduce_sum((self.target_lab)*self.ImgToEnforceLabel_Score_s,1)
-        self.max_nontarget_lab_score = tf.reduce_max((1-self.target_lab)*self.ImgToEnforceLabel_Score - (self.target_lab*10000),1)
-        max_nontarget_lab_score_s    = tf.reduce_max((1-self.target_lab)*self.ImgToEnforceLabel_Score_s - (self.target_lab*10000),1)
+        self.target_lab_score        = torch.sum((self.target_lab)*self.ImgToEnforceLabel_Score,1)
+        target_lab_score_s           = torch.sum((self.target_lab)*self.ImgToEnforceLabel_Score_s,1)
+        self.max_nontarget_lab_score = torch.max((1-self.target_lab)*self.ImgToEnforceLabel_Score - (self.target_lab*10000),dim=1)
+        max_nontarget_lab_score_s    = torch.max((1-self.target_lab)*self.ImgToEnforceLabel_Score_s - (self.target_lab*10000),dim=1)
         if self.mode == "PP":
-            Loss_Attack = tf.maximum(0.0, self.max_nontarget_lab_score - self.target_lab_score + self.kappa)
-            Loss_Attack_s = tf.maximum(0.0, max_nontarget_lab_score_s - target_lab_score_s + self.kappa)
+            Loss_Attack = torch.max(0.0, self.max_nontarget_lab_score - self.target_lab_score + self.kappa)
+            Loss_Attack_s = torch.max(0.0, max_nontarget_lab_score_s - target_lab_score_s + self.kappa)
         elif self.mode == "PN":
-            Loss_Attack = tf.maximum(0.0, -self.max_nontarget_lab_score + self.target_lab_score + self.kappa)
-            Loss_Attack_s = tf.maximum(0.0, -max_nontarget_lab_score_s + target_lab_score_s + self.kappa)
+            Loss_Attack = torch.max(0.0, -self.max_nontarget_lab_score + self.target_lab_score + self.kappa)
+            Loss_Attack_s = torch.max(0.0, -max_nontarget_lab_score_s + target_lab_score_s + self.kappa)
         # sum up the losses
-        self.Loss_L1Dist    = tf.reduce_sum(self.L1_dist)
-        self.Loss_L1Dist_s  = tf.reduce_sum(self.L1_dist_s)
-        self.Loss_L2Dist    = tf.reduce_sum(self.L2_dist)
-        self.Loss_L2Dist_s  = tf.reduce_sum(self.L2_dist_s)
-        self.Loss_Attack    = tf.reduce_sum(self.const*Loss_Attack)
-        self.Loss_Attack_s  = tf.reduce_sum(self.const*Loss_Attack_s)
+        self.Loss_L1Dist    = torch.sum(self.L1_dist)
+        self.Loss_L1Dist_s  = torch.sum(self.L1_dist_s)
+        self.Loss_L2Dist    = torch.sum(self.L2_dist)
+        self.Loss_L2Dist_s  = torch.sum(self.L2_dist_s)
+        self.Loss_Attack    = torch.sum(self.const*Loss_Attack)
+        self.Loss_Attack_s  = torch.sum(self.const*Loss_Attack_s)
+
         if self.mode == "PP":
-            self.Loss_AE_Dist   = self.gamma*tf.square(tf.norm(self.AE(self.delta_img)-self.delta_img))
-            self.Loss_AE_Dist_s = self.gamma*tf.square(tf.norm(self.AE(self.delta_img)-self.delta_img_s))
+            dist = (self.AE(self.delta_img)-self.delta_img)/torch.sqrt((self.AE(self.delta_img)-self.delta_img**2))
+            dist_s = (self.AE(self.delta_img)-self.delta_img)/torch.sqrt((self.AE(self.delta_img_s)-self.delta_img_s**2))
+            self.Loss_AE_Dist   = self.gamma*(dist**2)
+            self.Loss_AE_Dist_s = self.gamma*(dist_s**2)
         elif self.mode == "PN":
-            self.Loss_AE_Dist   = self.gamma*tf.square(tf.norm(self.AE(self.adv_img)-self.adv_img))
-            self.Loss_AE_Dist_s = self.gamma*tf.square(tf.norm(self.AE(self.adv_img_s)-self.adv_img_s))
+            dist = self.AE(self.adv_img)-self.adv_img/torch.sqrt((self.AE(self.adv_img)-self.adv_img**2))
+            dist_s = (self.AE(self.adv_img)-self.adv_img)/torch.sqrt((self.AE(self.adv_img)-self.adv_img_s**2))
+            self.Loss_AE_Dist   = self.gamma*(dist**2)
+            self.Loss_AE_Dist_s = self.gamma*(dist_s**2)
 
         self.Loss_ToOptimize = self.Loss_Attack_s + self.Loss_L2Dist_s + self.Loss_AE_Dist_s
-        self.Loss_Overall    = self.Loss_Attack   + self.Loss_L2Dist   + self.Loss_AE_Dist   + tf.multiply(self.beta, self.Loss_L1Dist)
+        self.Loss_Overall    = self.Loss_Attack   + self.Loss_L2Dist   + self.Loss_AE_Dist   + torch.mul(self.beta, self.Loss_L1Dist)
 
         self.learning_rate = tf.train.polynomial_decay(self.INIT_LEARNING_RATE, self.global_step, self.MAX_ITERATIONS, 0, power=0.5)
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
