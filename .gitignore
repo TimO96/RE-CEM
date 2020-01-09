@@ -2,6 +2,9 @@
 .~*
 
 # python
-__pycache__/
+**/__pycache__/
 
+*.pyc
 
+Pytorch/.vscode/settings.json
+Original_Code/.vscode/settings.json

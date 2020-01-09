@@ -20,8 +20,9 @@
 
 import sys
 import tensorflow as tf
-import torch
+ros(shape, dtyimport torch
 import numpy as np
+import torchvision
 
 
 class AEADEN:
@@ -46,7 +47,7 @@ class AEADEN:
 
         # these are variables to be more efficient in sending data to tf
         self.orig_img = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-        #self.orig_img = Variable(torch.zeros(shape, dtype=torch.float32))
+        #self.orig_img = Variable(torch.zepe=torch.float32))
         self.adv_img = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
         self.adv_img_s = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
         self.target_lab = torch.zeros((batch_size, nun_classes), dtype=torch.float32)
@@ -57,35 +58,35 @@ class AEADEN:
         self.assign_orig_img = torch.empty(shape, dtype=torch.float32)
         self.assign_adv_img = torch.empty(shape, dtype=torch.float32)
         self.assign_adv_img_s = torch.empty(shape, dtype=torch.float32)
-        self.assign_target_lab = torch.empty(batch_size, nun_classes), dtype=torch.float32)
+        self.assign_target_lab = torch.empty((batch_size, nun_classes), dtype=torch.float32)
         self.assign_const = torch.empty(batch_size, dtype=torch.float32) ## ???? origineel
 
 
         """Fast Iterative Soft Thresholding"""
         """--------------------------------"""
         #self.zt = tf.divide(self.global_step, self.global_step+tf.cast(3, tf.float32))
-        self.zt = torch.div(self.global_step, self.global_step+torch.tensor(3, dtype=torch.float32))
-        cond1 = tf.cast(tf.greater(tf.subtract(self.adv_img_s, self.orig_img),self.beta), tf.float32)
-        cond2 = tf.cast(tf.less_equal(tf.abs(tf.subtract(self.adv_img_s,self.orig_img)),self.beta), tf.float32)
-        cond3 = tf.cast(tf.less(tf.subtract(self.adv_img_s, self.orig_img),tf.negative(self.beta)), tf.float32)
-        upper = tf.minimum(tf.subtract(self.adv_img_s, self.beta), tf.cast(0.5, tf.float32))
-        lower = tf.maximum(tf.add(self.adv_img_s, self.beta), tf.cast(-0.5, tf.float32))
-        self.assign_adv_img = tf.multiply(cond1,upper)+tf.multiply(cond2,self.orig_img)+tf.multiply(cond3,lower)
+        self.zt = self.global_step / (self.global_step + torch.tensor(3, dtype=torch.float32)))
+        cond1 = ((self.adv_img_s - self.orig_img) > self.beta).float32()
+        cond2 = ((torch.abs(self.adv_img_s - self.orig_img)) <= self.beta).float32()
+        cond3 = ((self.adv_img_s - self.orig_img) < -self.beta).float32()
+        upper = torch.min((self.adv_img_s - self.beta), torch.tensor(0.5, dtype=torch.float32))
+        lower = torch.max((self.adv_img_s + self.beta), torch.tensor(-0.5, dtype=torch.float32))
+        self.assign_adv_img = cond1 * upper + cond2 * self.orig_img + cond3 * lower
 
-        cond4=tf.cast(tf.greater(tf.subtract( self.assign_adv_img, self.orig_img),0), tf.float32)
-        cond5=tf.cast(tf.less_equal(tf.subtract( self.assign_adv_img,self.orig_img),0), tf.float32)
+        cond4 = ((self.assign_adv_img - self.orig_img) > 0).float32()
+        cond5 = ((self.assign_adv_img - self.orig_img) <= 0).float32()
         if self.mode == "PP":
-            self.assign_adv_img = tf.multiply(cond5,self.assign_adv_img)+tf.multiply(cond4,self.orig_img)
+            self.assign_adv_img = cond5 * self.assign_adv_img + cond4 * self.orig_img
         elif self.mode == "PN":
-            self.assign_adv_img = tf.multiply(cond4,self.assign_adv_img)+tf.multiply(cond5,self.orig_img)
+            self.assign_adv_img = cond4 * self.assign_adv_img + cond5 * self.orig_img
 
-        self.assign_adv_img_s = self.assign_adv_img+tf.multiply(self.zt, self.assign_adv_img-self.adv_img)
-        cond6=tf.cast(tf.greater(tf.subtract(  self.assign_adv_img_s, self.orig_img),0), tf.float32)
-        cond7=tf.cast(tf.less_equal(tf.subtract(  self.assign_adv_img_s,self.orig_img),0), tf.float32)
+        self.assign_adv_img_s = self.assign_adv_img + self.zt * (self.assign_adv_img-self.adv_img)
+        cond6 = ((self.assign_adv_img_s - self.orig_img) > 0).float32()
+        cond7 = ((self.assign_adv_img_s - self.orig_img) <= 0).float32()
         if self.mode == "PP":
-            self.assign_adv_img_s = tf.multiply(cond7, self.assign_adv_img_s)+tf.multiply(cond6,self.orig_img)
+            self.assign_adv_img_s = cond7 * self.assign_adv_img_s + cond6 * self.orig_img
         elif self.mode == "PN":
-            self.assign_adv_img_s = tf.multiply(cond6, self.assign_adv_img_s)+tf.multiply(cond7,self.orig_img)
+            self.assign_adv_img_s = cond6 * self.assign_adv_img_s + cond7 * self.orig_img
 
 
         self.adv_updater = tf.assign(self.adv_img, self.assign_adv_img)
@@ -103,40 +104,45 @@ class AEADEN:
             self.ImgToEnforceLabel_Score_s = model.predict(self.adv_img_s)
 
         # distance to the input data
-        self.L2_dist = tf.reduce_sum(tf.square(self.delta_img),[1,2,3])
-        self.L2_dist_s = tf.reduce_sum(tf.square(self.delta_img_s),[1,2,3])
-        self.L1_dist = tf.reduce_sum(tf.abs(self.delta_img),[1,2,3])
-        self.L1_dist_s = tf.reduce_sum(tf.abs(self.delta_img_s),[1,2,3])
-        self.EN_dist = self.L2_dist + tf.multiply(self.L1_dist, self.beta)
-        self.EN_dist_s = self.L2_dist_s + tf.multiply(self.L1_dist_s, self.beta)
+        self.L2_dist = torch.sum(self.delta_img**2, (1,2,3))
+        self.L2_dist_s = torch.sum(self.delta_img_s**2, (1,2,3))
+        self.L1_dist = torch.sum(torch.abs(self.delta_img), (1,2,3))
+        self.L1_dist_s = torch.sum(torch.abs(self.delta_img_s), (1,2,3))
+        self.EN_dist = self.L2_dist + torch.mul(self.L1_dist, self.beta)
+        self.EN_dist_s = self.L2_dist_s + torch.mul(self.L1_dist_s, self.beta)
 
         # compute the probability of the label class versus the maximum other
-        self.target_lab_score        = tf.reduce_sum((self.target_lab)*self.ImgToEnforceLabel_Score,1)
-        target_lab_score_s           = tf.reduce_sum((self.target_lab)*self.ImgToEnforceLabel_Score_s,1)
-        self.max_nontarget_lab_score = tf.reduce_max((1-self.target_lab)*self.ImgToEnforceLabel_Score - (self.target_lab*10000),1)
-        max_nontarget_lab_score_s    = tf.reduce_max((1-self.target_lab)*self.ImgToEnforceLabel_Score_s - (self.target_lab*10000),1)
+        self.target_lab_score        = torch.sum((self.target_lab) * self.ImgToEnforceLabel_Score, 1)
+        target_lab_score_s           = torch.sum((self.target_lab) * self.ImgToEnforceLabel_Score_s, 1)
+        self.max_nontarget_lab_score = torch.max((1-self.target_lab) * self.ImgToEnforceLabel_Score - (self.target_lab*10000), dim=1)
+        max_nontarget_lab_score_s    = torch.max((1-self.target_lab) * self.ImgToEnforceLabel_Score_s - (self.target_lab*10000), dim=1)
         if self.mode == "PP":
-            Loss_Attack = tf.maximum(0.0, self.max_nontarget_lab_score - self.target_lab_score + self.kappa)
-            Loss_Attack_s = tf.maximum(0.0, max_nontarget_lab_score_s - target_lab_score_s + self.kappa)
+            Loss_Attack = torch.max(0.0, self.max_nontarget_lab_score - self.target_lab_score + self.kappa)
+            Loss_Attack_s = torch.max(0.0, max_nontarget_lab_score_s - target_lab_score_s + self.kappa)
         elif self.mode == "PN":
-            Loss_Attack = tf.maximum(0.0, -self.max_nontarget_lab_score + self.target_lab_score + self.kappa)
-            Loss_Attack_s = tf.maximum(0.0, -max_nontarget_lab_score_s + target_lab_score_s + self.kappa)
+            Loss_Attack = torch.max(0.0, -self.max_nontarget_lab_score + self.target_lab_score + self.kappa)
+            Loss_Attack_s = torch.max(0.0, -max_nontarget_lab_score_s + target_lab_score_s + self.kappa)
         # sum up the losses
-        self.Loss_L1Dist    = tf.reduce_sum(self.L1_dist)
-        self.Loss_L1Dist_s  = tf.reduce_sum(self.L1_dist_s)
-        self.Loss_L2Dist    = tf.reduce_sum(self.L2_dist)
-        self.Loss_L2Dist_s  = tf.reduce_sum(self.L2_dist_s)
-        self.Loss_Attack    = tf.reduce_sum(self.const*Loss_Attack)
-        self.Loss_Attack_s  = tf.reduce_sum(self.const*Loss_Attack_s)
+        self.Loss_L1Dist    = torch.sum(self.L1_dist)
+        self.Loss_L1Dist_s  = torch.sum(self.L1_dist_s)
+        self.Loss_L2Dist    = torch.sum(self.L2_dist)
+        self.Loss_L2Dist_s  = torch.sum(self.L2_dist_s)
+        self.Loss_Attack    = torch.sum(self.const * Loss_Attack)
+        self.Loss_Attack_s  = torch.sum(self.const * Loss_Attack_s)
+
         if self.mode == "PP":
-            self.Loss_AE_Dist   = self.gamma*tf.square(tf.norm(self.AE(self.delta_img)-self.delta_img))
-            self.Loss_AE_Dist_s = self.gamma*tf.square(tf.norm(self.AE(self.delta_img)-self.delta_img_s))
+            dist = (self.AE(self.delta_img)-self.delta_img)/torch.sqrt((self.AE(self.delta_img)-self.delta_img**2))
+            dist_s = (self.AE(self.delta_img)-self.delta_img)/torch.sqrt((self.AE(self.delta_img_s)-self.delta_img_s**2))
+            self.Loss_AE_Dist   = self.gamma * (dist**2)
+            self.Loss_AE_Dist_s = self.gamma * (dist_s**2)
         elif self.mode == "PN":
-            self.Loss_AE_Dist   = self.gamma*tf.square(tf.norm(self.AE(self.adv_img)-self.adv_img))
-            self.Loss_AE_Dist_s = self.gamma*tf.square(tf.norm(self.AE(self.adv_img_s)-self.adv_img_s))
+            dist = (self.AE(self.adv_img)-self.adv_img)/torch.sqrt((self.AE(self.adv_img)-self.adv_img**2))
+            dist_s = (self.AE(self.adv_img)-self.adv_img)/torch.sqrt((self.AE(self.adv_img)-self.adv_img_s**2)) # POSSIBLE MISTAKE??
+            self.Loss_AE_Dist   = self.gamma * (dist**2)
+            self.Loss_AE_Dist_s = self.gamma * (dist_s**2)
 
         self.Loss_ToOptimize = self.Loss_Attack_s + self.Loss_L2Dist_s + self.Loss_AE_Dist_s
-        self.Loss_Overall    = self.Loss_Attack   + self.Loss_L2Dist   + self.Loss_AE_Dist   + tf.multiply(self.beta, self.Loss_L1Dist)
+        self.Loss_Overall    = self.Loss_Attack   + self.Loss_L2Dist   + self.Loss_AE_Dist   + torch.mul(self.beta, self.Loss_L1Dist)
 
         self.learning_rate = tf.train.polynomial_decay(self.INIT_LEARNING_RATE, self.global_step, self.MAX_ITERATIONS, 0, power=0.5)
         optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
@@ -153,7 +159,7 @@ class AEADEN:
         self.setup.append(self.adv_img.assign(self.assign_adv_img))
         self.setup.append(self.adv_img_s.assign(self.assign_adv_img_s))
 
-        self.init = tf.variables_initializer(var_list=[self.global_step]+[self.adv_img_s]+[self.adv_img]+new_vars)
+        self.init = tf.variables_initializer(var_list=[self.global_step] + [self.adv_img_s] + [self.adv_img] + new_vars)
 
     def attack(self, imgs, labs):
 
@@ -175,11 +181,11 @@ class AEADEN:
 
         # set the lower and upper bounds accordingly
         Const_LB = np.zeros(batch_size)
-        CONST = np.ones(batch_size)*self.init_const
-        Const_UB = np.ones(batch_size)*1e10
+        CONST = np.ones(batch_size) * self.init_const
+        Const_UB = np.ones(batch_size) * 1e10
         # the best l2, score, and image attack
-        overall_best_dist = [1e10]*batch_size
-        overall_best_attack = [np.zeros(imgs[0].shape)]*batch_size
+        overall_best_dist = [1e10] * batch_size
+        overall_best_attack = [np.zeros(imgs[0].shape)] * batch_size
 
         for binary_search_steps_idx in range(self.BINARY_SEARCH_STEPS):
             # completely reset adam's internal state.
@@ -187,8 +193,8 @@ class AEADEN:
             img_batch = imgs[:batch_size]
             label_batch = labs[:batch_size]
 
-            current_step_best_dist = [1e10]*batch_size
-            current_step_best_score = [-1]*batch_size
+            current_step_best_dist = [1e10] * batch_size
+            current_step_best_score = [-1] * batch_size
 
             # set the variables so that we don't have to send them over again
             self.sess.run(self.setup, {self.assign_orig_img: img_batch,
@@ -240,4 +246,4 @@ class AEADEN:
 
         # return the best solution found
         overall_best_attack = overall_best_attack[0]
-        return overall_best_attack.reshape((1,) + overall_best_attack.shape)
+        return overalla_best_attack.reshape((1,) + overall_best_attack.shape)
