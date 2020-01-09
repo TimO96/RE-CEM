@@ -21,20 +21,11 @@
 
 from torch.nn import Module, Conv2d, LeakyReLU, MaxPool2d, Upsample, Sequential
 from torch import load, save, eye, uint8, from_numpy
-# import torch
 from torchsummary import summary
 
 import os
 import h5py
 import numpy as np
-
-class Print(Module):
-    def __init__(self):
-        super(Print, self).__init__()
-
-    def forward(self, x):
-        print(x.shape)
-        return x
 
 class AE(Module):
     def __init__(self, restore=None):
@@ -78,14 +69,7 @@ class AE(Module):
         )
 
         if restore:
-            try:
-                self.load_state_dict(restore)
-            except:
-                print("Error:", sys.exc_info()[0])
-                print("Make sure restore is a torch.load(PATH) object")
-                raise
-
-        # self.model = Sequential(*model)
+            self.load_state_dict(restore)
 
     def predict(self, data):
         """Predict output for input data (batch, dim1, dim2, c)."""
@@ -101,36 +85,6 @@ class AE(Module):
     def forward(self, data):
         """Predict alias."""
         return self.predict(data)
-# m = AE()
-# print(m)
-# from setup_mnist import *
-# data = MNIST()
-# p = m.predict(data.test_data[0:10])
-# print(p.shape)
-# print(m.state_dict().keys())
-# for para in m.parameters():
-#     print(para.shape)
-# save(m.state_dict(), 'state_dict')
-#
-# v = AE(load('state_dict'))
-
-# def find(name, item):
-#     # print(item)
-#     # try:
-#     if isinstance(item, h5py.Dataset):
-#         # print(item.parent.file)
-#         # print(name)
-#         s = item.shape
-#         print(name)
-#         print(name.split('/')[1:], s)
-#         # print(item.file)
-#         # print(item.name)
-#         # print(item.parent)
-#         # print(item.shape)
-#         # return s
-#         # d[name]=s
-#     # except:/
-#         # pass
 
 def h5_to_state_dict(h5_file, mapping):
     """Create Pytorch state_dict from h5 weight with mapping."""
@@ -166,17 +120,10 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
     # Create AE
     ae = AE(h5_to_state_dict(weight_file, AE_map))
 
-
-
     if print_summary:
-        summary(ae, (28,28,1))
+        summary(ae, (ae.image_size, ae.image_size, ae.num_channels))
 
     return ae
-
-ae = load_AE('mnist_AE_weights', True)
-# p = ae.predict(torch.zeros((10,28,28,1)))
-# print(p)
-
 
 def save_img(img, name="output"):
     """Save an MNIST image to location name, both as .pt and .png."""
@@ -208,3 +155,6 @@ def model_prediction(model, inputs):
     prob_str = np.array2string(prob.cpu().data.numpy()).replace('\n','')
 
     return prob, predicted_class, prob_str
+
+# Example
+# ae = load_AE('mnist_AE_weights', True)
