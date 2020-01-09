@@ -146,4 +146,6 @@ class MNISTModel(Module):
         assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
 
         # Reshape data, expect (batch, channel, dim1, dim2)
-        return self.model(data.view(-1, 1, self.image_size, self.image_size))
+        pred = self.model(data.view(-1, 1, self.image_size, self.image_size))
+
+        return pred.view(-1, self.image_size, self.image_size, 1)
