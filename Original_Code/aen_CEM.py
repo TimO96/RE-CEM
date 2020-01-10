@@ -141,7 +141,7 @@ class AEADEN:
         start_vars = set(x.name for x in tf.global_variables())
         self.train = optimizer.minimize(self.Loss_ToOptimize, var_list=[self.adv_img_s], global_step=self.global_step)
         end_vars = tf.global_variables()
-        self.new_vars = [x for x in end_vars if x.name not in start_vars]
+        new_vars = [x for x in end_vars if x.name not in start_vars]
 
         # these are the variables to initialize when we run
         self.setup = []
@@ -151,7 +151,7 @@ class AEADEN:
         self.setup.append(self.adv_img.assign(self.assign_adv_img))
         self.setup.append(self.adv_img_s.assign(self.assign_adv_img_s))
 
-        self.init = tf.variables_initializer(var_list=[self.global_step]+[self.adv_img_s]+[self.adv_img]+self.new_vars)
+        self.init = tf.variables_initializer(var_list=[self.global_step]+[self.adv_img_s]+[self.adv_img]+new_vars)
 
     def attack(self, imgs, labs):
 
