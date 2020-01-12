@@ -9,7 +9,7 @@ def fista(label, beta, step, delta, slack, orig_img):
     Fast Iterative Shrinkage-Thresholding Algorithm.
     Input:
         - label    : label for orig_img
-        - beta     : Hyperparameter (0.1)
+        - beta     : regularization coefficient (hyperparameter)
         - step     : k
         - delta    : last perturbation
         - slack    : last slack vector
@@ -40,5 +40,5 @@ def update(variable, orig_img, label):
     elif label == "PN":
         return (z > 0) * variable + (z <= 0) * orig_img
 
-    # When label is unkown
+    # When label is unknown.
     return None
