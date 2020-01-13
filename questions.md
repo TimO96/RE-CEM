@@ -17,3 +17,6 @@ results should be in separated`
 - what model is being trained, if any? what does the attack function supposed to mean exactly? `The delta`
 - mnist.h5 for MNISTModel pretrained required? `Can be used, also easy to retrain`
 - are we expected to train both models (autoencoder-decoder and MNISTModel) from the start up? if so: optimizer specifications for the MNISTModel are not mentioned in the paper `Possible when changing datasets, not necessary for MNIST`
+
+# Questions 14/01
+- Should we als report differences in implementation and paper (e.g. 60.000 training examples vs. 55.000 training examples), or only if the results are then different (or not at all)?
