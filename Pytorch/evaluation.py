@@ -69,6 +69,8 @@ def loss_function(delta, orig_img, target_lab, kappa, mode="PN"):
 
     # Compute the probability of the label class versus the maximum other.
     target_lab_score = torch.sum((target_lab) * pred, dim=1)
+    # Inflate the real label in one-hot vector target_lab to infinity such that
+    # the best class from the other classes is predicted.
     max_nontarget_lab_score = torch.max((1-target_lab) * pred - (target_lab*float('inf')), dim=1)
 
     if mode == "PP":
