@@ -25,3 +25,6 @@ results should be in separated`
 - What is this 10000 doing in the max_nontarget_lab_score?
 - Loss after training step?
 - Structure report?
+
+# Questions 17/01
+ - Skribbl.io?
