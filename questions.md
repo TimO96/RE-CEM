@@ -24,3 +24,4 @@ results should be in separated`
 - Using ground truth or prediction to compare changing classes (Section 4.4)
 - What is this 10000 doing in the max_nontarget_lab_score?
 - Loss after training step?
+- Structure report?
