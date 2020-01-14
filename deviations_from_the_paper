@@ -1,0 +1,5 @@
+- Fixed 'bug' in aen_CEM.py line 131 self.Loss_AE_Dist_s = self.gamma*tf.square(tf.norm(self.AE(self.delta_img)-self.delta_img_s))
+- Converted Tensorflow/Keras implementation to Pytorch, hereby altering the session graph to Pytorch
+
+
+- To be added...
