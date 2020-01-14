@@ -1,4 +1,4 @@
-## Utils.py -- Some utility functions
+## utils.py -- Some utility functions
 ##
 ## Copyright (C) 2018, IBM Corp
 ##                     Chun-Chen Tu <timtu@umich.edu>
