@@ -26,3 +26,6 @@ results should be in separated`
 - Loss after training step? `Could be just wrong for the first grad`
 - Structure report? `Explain the algorithm and implementation (+changes), setup, most interseting is discussion + broad interpretation noreal broad implementation this is nice and works okayish bt not usable because continous image f.e. target other scientists write optimization formulas`
 - Kappa maximum (eq 4/2) `thing in the appendix is just wrong, in the end it doesnt matter, report if it converges to kappa or zero`
+
+# Questions 17/01
+ - Skribbl.io?
