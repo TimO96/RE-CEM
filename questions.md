@@ -20,3 +20,7 @@ results should be in separated`
 
 # Questions 14/01
 - Should we als report differences in implementation and paper (e.g. 60.000 training examples vs. 55.000 training examples), or only if the results are then different (or not at all)?
+- Setting the random seed?
+- Using ground truth or prediction to compare changing classes (Section 4.4)
+- What is this 10000 doing in the max_nontarget_lab_score?
+- Loss after training step?
