@@ -3,7 +3,7 @@
 ##
 ## (C) 2020 UvA FACT AI group
 
-def loss(mode, orig_img, delta, target_lab, autoencoder, c_step, kappa, gamma, \
+def loss(mode, orig_img, adv, target_lab, autoencoder, c_step, kappa, gamma, \
          beta, to_optimize=True):
     """
     Compute the loss function component for the network to find either
@@ -24,6 +24,8 @@ def loss(mode, orig_img, delta, target_lab, autoencoder, c_step, kappa, gamma, \
         - computed loss between the most probable class and the most probable
           class given the pertubation (delta)
     """
+
+    delta = adv - orig_img
 
     # Distance to the input data.
     L2_dist = torch.sum(delta**2, (1,2,3))
