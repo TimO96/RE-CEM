@@ -20,14 +20,14 @@ from torch.nn import Sequential, Conv2d, LeakyReLU, MaxPool2d, Flatten, Linear,\
 from torch import from_numpy
 import sys
 
-def extract_data(filename, num_images):
+def extract_data(filename, num_images, img_size=28):
     """Read MNIST image file as pytorch tensor."""
     with gzip.open(filename) as bytestream:
         bytestream.read(16)
-        buf = bytestream.read(num_images*28*28)
+        buf = bytestream.read(num_images*img_size*img_size)
         data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
         data = (data / 255) - 0.5
-        data = data.reshape(num_images, 28, 28, 1)
+        data = data.reshape(num_images, img_size, img_size, 1)
     return from_numpy(data)
 
 def extract_labels(filename, num_images):
@@ -131,21 +131,14 @@ class MNISTModel(Module):
         if use_log:
             model += [Softmax(dim=-1)]
 
-        if restore:
-            try:
-                self.load_state_dict(restore)
-            except:
-                print("Error:", sys.exc_info()[0])
-                print("Make sure restore is a torch.load(PATH) object")
-                raise
-
         self.model = Sequential(*model)
+
+        if restore:
+            self.load_state_dict(restore)
 
     def predict(self, data):
         """Predict output of MNISTModel for input data (batch, dim1, dim2, c)."""
         assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
 
         # Reshape data, expect (batch, channel, dim1, dim2)
-        pred = self.model(data.view(-1, 1, self.image_size, self.image_size))
-
-        return pred.view(-1, self.image_size, self.image_size, 1)
+        return self.model(data.view(-1, 1, self.image_size, self.image_size))
