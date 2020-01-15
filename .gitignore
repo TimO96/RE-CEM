@@ -8,5 +8,4 @@
 *.pyc
 *.swp
 
-Pytorch/.vscode/settings.json
-Original_Code/.vscode/settings.json
+.vscode/settings.json
