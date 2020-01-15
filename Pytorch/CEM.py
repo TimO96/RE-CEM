@@ -13,7 +13,7 @@ import evaluation
 
 
 class CEM:
-    def __init__(self, model, mode, autoencoder, batch_size,  learning_rate_init,
+    def __init__(self, model, mode, AE, batch_size,  learning_rate_init,
                  c_init, c_steps, max_iterations, kappa, beta, gamma):
         """
         Constrastive Explanation Method (CEM) class initialization.
@@ -21,7 +21,7 @@ class CEM:
         Input:
             - model              : Pytorch CNN prediction model
             - mode               : perform either PN or PP analysis
-            - autoencoder        : autoencoder model for the adversarial attacks
+            - AE                 : autoencoder model for the adversarial attacks
             - batch_size         : number of data instances to be analyzed
             - learning_rate_init : starting learning rate for the optimizer
             - c_init             : starting weight constant of the loss function
@@ -42,7 +42,7 @@ class CEM:
         # Define model variables
         self.model = model
         self.mode = mode
-        self.autoencoder = autoencoder
+        self.AE = AE
         self.batch_size = batch_size
         self.lr_init = learning_rate_init
         self.c_init = c_init
@@ -56,13 +56,6 @@ class CEM:
         self.fista_c = torch.zeros((batch_size,), dtype=tf.float32, requires_grad=True)
         self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
         self.optimizer = torch.optim.SGD(params=self.adv_img_slack, learning_rate = self.lr_init)
-
-        # and here's what we use to assign them
-        #self.assign_orig_img = torch.empty(shape, dtype=torch.float32)
-        #self.assign_adv_img = torch.empty(shape, dtype=torch.float32)
-        #self.assign_adv_img_s = torch.empty(shape, dtype=torch.float32)
-        #self.assign_target_lab = torch.empty((batch_size, nun_classes), dtype=torch.float32)
-        #self.assign_const = torch.empty(batch_size, dtype=torch.float32) ## ???? origineel
 
 
     def attack(self, imgs, labs):
@@ -84,9 +77,9 @@ class CEM:
         batch_size = self.batch_size
 
         # set the lower and upper bounds accordingly
-        Const_LB = np.zeros(batch_size)
-        CONST = np.ones(batch_size) * self.init_const
-        Const_UB = np.ones(batch_size) * 1e10
+        lower_bound = np.zeros(batch_size)
+        c_start = np.ones(batch_size) * self.init_const
+        upper_bound = np.ones(batch_size) * 1e10
         # the best l2, score, and image attack
         overall_best_dist = [1e10] * batch_size
         overall_best_attack = [np.zeros(imgs[0].shape)] * batch_size
@@ -102,23 +95,18 @@ class CEM:
             # set the variables so that we don't have to send them over again
             orig_img = img_batch
             target_lab = label_batch
-            const = CONST
             adv_img = img_batch
             self.adv_img_slack = img_batch
 
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
-                adv_img, self.adv_img_slack = fista.fista(self.mode, beta, iteration, adv_img, self.adv_img_slack, orig_img)
+                adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, adv_img, self.adv_img_slack, orig_img)
                 self.optimizer.zero_grad()
                 self.optimizer = poly_lr_scheduler(self.optimizer, self.lr_init, iteration)
-                loss, loss_EN, OutputScore = evaluation.loss(adv_img-orig_img, orig_img, target_lab, kappa, AE, const, beta)
+                loss, loss_EN, pred = evaluation.loss(adv_img-orig_img, orig_img, target_lab, self.kappa, self.AE, const, self.beta)
                 loss.backward()
                 self.optimizer.step()
 
-
-                #Loss_Overall, Loss_EN, OutputScore, adv_img = self.sess.run([self.Loss_Overall, self.EN_dist, self.ImgToEnforceLabel_Score, self.adv_img])
-                #Loss_Attack, Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist = self.sess.run([self.Loss_Attack, self.Loss_L2Dist, self.Loss_L1Dist, self.Loss_AE_Dist])
-                #target_lab_score, max_nontarget_lab_score_s = self.sess.run([self.target_lab_score, self.max_nontarget_lab_score])
 
                 if iteration%(self.MAX_ITERATIONS//10) == 0:
                     print("iter:{} const:{}". format(iteration, CONST))
@@ -128,29 +116,29 @@ class CEM:
                     #print("")
                     sys.stdout.flush()
 
-                for batch_idx,(the_dist, the_score, the_adv_img) in enumerate(zip(Loss_EN, OutputScore, adv_img)):
-                    if the_dist < current_step_best_dist[batch_idx] and compare(the_score, np.argmax(label_batch[batch_idx])):
-                        current_step_best_dist[batch_idx] = the_dist
-                        current_step_best_score[batch_idx] = np.argmax(the_score)
-                    if the_dist < overall_best_dist[batch_idx] and compare(the_score, np.argmax(label_batch[batch_idx])):
-                        overall_best_dist[batch_idx] = the_dist
+                for batch_idx,(dist, score, the_adv_img) in enumerate(zip(loss_EN, pred, adv_img)):
+                    if dist < current_step_best_dist[batch_idx] and compare(score, np.argmax(label_batch[batch_idx])):
+                        current_step_best_dist[batch_idx] = dist
+                        current_step_best_score[batch_idx] = np.argmax(score)
+                    if dist < overall_best_dist[batch_idx] and compare(score, np.argmax(label_batch[batch_idx])):
+                        overall_best_dist[batch_idx] = dist
                         overall_best_attack[batch_idx] = the_adv_img
 
             # adjust the constant as needed
             for batch_idx in range(batch_size):
                 if compare(current_step_best_score[batch_idx], np.argmax(label_batch[batch_idx])) and current_step_best_score[batch_idx] != -1:
                     # success, divide const by two
-                    Const_UB[batch_idx] = min(Const_UB[batch_idx],CONST[batch_idx])
-                    if Const_UB[batch_idx] < 1e9:
-                        CONST[batch_idx] = (Const_LB[batch_idx] + Const_UB[batch_idx])/2
+                    upper_bound[batch_idx] = min(upper_bound[batch_idx], c_start[batch_idx])
+                    if upper_bound[batch_idx] < 1e9:
+                        c_start[batch_idx] = (lower_bound[batch_idx] + upper_bound[batch_idx])/2
                 else:
                     # failure, either multiply by 10 if no solution found yet
                     #          or do binary search with the known upper bound
-                    Const_LB[batch_idx] = max(Const_LB[batch_idx],CONST[batch_idx])
-                    if Const_UB[batch_idx] < 1e9:
-                        CONST[batch_idx] = (Const_LB[batch_idx] + Const_UB[batch_idx])/2
+                    lower_bound[batch_idx] = max(lower_bound[batch_idx], c_start[batch_idx])
+                    if upper_bound[batch_idx] < 1e9:
+                        c_start[batch_idx] = (lower_bound[batch_idx] + upper_bound[batch_idx])/2
                     else:
-                        CONST[batch_idx] *= 10
+                        c_start[batch_idx] *= 10
 
         # return the best solution found
         overall_best_attack = overall_best_attack[0]
