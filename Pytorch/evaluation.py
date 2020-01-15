@@ -3,7 +3,9 @@
 ##
 ## (C) 2020 UvA FACT AI group
 
-def loss(mode, orig_img, adv, target_lab, autoencoder, c_step, kappa, gamma, \
+import torch
+
+def loss(mode, orig_img, adv, target_lab, autoencoder, c_start, kappa, gamma, \
          beta, to_optimize=True):
     """
     Compute the loss function component for the network to find either
@@ -14,7 +16,7 @@ def loss(mode, orig_img, adv, target_lab, autoencoder, c_step, kappa, gamma, \
         - delta         : last perturbation
         - target_lab    : label of the to be predicted target class
         - AE            : autoencoder model for the adversarial attacks
-        - c_step        : regularization coefficient (hyperparameter)
+        - c_start       : regularization coefficient (hyperparameter)
         - kappa         : confidence parameter to measure the distance
                           between target class and other classes
         - gamma         : regularization weight for autoencoder loss function
@@ -38,7 +40,7 @@ def loss(mode, orig_img, adv, target_lab, autoencoder, c_step, kappa, gamma, \
     # Sum up the losses.
     loss_L1_dist = torch.sum(L1_dist)
     loss_L2_dist = torch.sum(L2_dist)
-    loss_attack = torch.sum(c_step * loss_attack)
+    loss_attack = torch.sum(c_start * loss_attack)
 
     # Based on the mode compute the last term of the objective function which
     # is the L2 reconstruction error of the autoencoder.

@@ -9,6 +9,7 @@ import numpy as np
 #import torchvision
 import fista
 import evaluation
+from polynomial_decay import poly_lr_scheduler
 
 
 class CEM:
@@ -53,7 +54,7 @@ class CEM:
 
         # Initialize optimizer.
         self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-        self.optimizer = torch.optim.SGD(params=self.adv_img_slack, learning_rate = self.lr_init)
+        self.optimizer = torch.optim.SGD(params=[self.adv_img_slack], lr=self.lr_init)
 
 
     def attack(self, imgs, labs):
@@ -82,7 +83,7 @@ class CEM:
         overall_best_dist = [1e10] * batch_size
         overall_best_attack = [np.zeros(imgs[0].shape)] * batch_size
 
-        for c_steps_idx in range(self.c_steps):
+        for _ in range(self.c_steps):
             # completely reset adam's internal state.
             img_batch = imgs[:batch_size]
             label_batch = labs[:batch_size]
@@ -101,8 +102,8 @@ class CEM:
                 adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, adv_img, self.adv_img_slack, orig_img)
                 self.optimizer.zero_grad()
                 self.optimizer = poly_lr_scheduler(self.optimizer, self.lr_init, iteration)
-                _, loss_EN, pred = evaluation.loss(self.mode, orig_img, adv_img, target_lab, self.kappa, self.AE, const, self.beta, to_optimize=False)
-                loss, _, _ = evaluation.loss(self.mode, orig_img, self.adv_img_slack, target_lab, self.kappa, self.AE, const, self.beta)
+                _, loss_EN, pred = evaluation.loss(self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
+                loss, _, _ = evaluation.loss(self.mode, orig_img, self.adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
                 loss.backward()
                 self.optimizer.step()
 
