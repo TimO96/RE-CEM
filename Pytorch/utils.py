@@ -20,7 +20,7 @@
 ## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
 from torch.nn import Module, Conv2d, LeakyReLU, MaxPool2d, Upsample, Sequential
-from torch import load, save, eye, uint8, from_numpy
+from torch import load, save, eye, uint8, from_numpy, argmax
 from torchsummary import summary
 
 import os
