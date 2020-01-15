@@ -12,7 +12,7 @@ import evaluation
 
 
 class CEM:
-    def __init__(self, model, mode, AE, batch_size,  learning_rate_init,
+    def __init__(self, model, mode, AE, batch_size, learning_rate_init,
                  c_init, c_steps, max_iterations, kappa, beta, gamma):
         """
         Constrastive Explanation Method (CEM) class initialization.
@@ -52,6 +52,7 @@ class CEM:
         self.gamma = gamma
 
         # Initialize optimizer.
+        self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
         self.optimizer = torch.optim.SGD(params=self.adv_img_slack, learning_rate = self.lr_init)
 
 
