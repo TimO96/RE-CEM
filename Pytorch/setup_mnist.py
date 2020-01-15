@@ -134,8 +134,6 @@ class MNISTModel(Module):
         self.model = Sequential(*model)
 
         if restore:
-            print("RESTORE")
-            restore = load(restore)
             self.load_state_dict(restore)
 
     def predict(self, data):
