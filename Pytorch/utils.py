@@ -22,13 +22,11 @@
 from torch.nn import Module, Conv2d, LeakyReLU, MaxPool2d, Upsample, Sequential
 from torch import load, save, eye, uint8, from_numpy, argmax
 from torchsummary import summary
-from torchvision.utils import save_image
+from PIL import Image
 
 import os
 import h5py
 import numpy as np
-from PIL import Image
-
 
 class AE(Module):
     def __init__(self, restore=None):

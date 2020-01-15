@@ -30,19 +30,20 @@ import utils as util
 from CEM import CEM
 
 def main(image_id, arg_max_iter=10, c_steps=9, init_const=10.0, mode="PN",
-         kappa=10, beta=1e-1, gamma=100, dir='results'):
-    random.seed(121)
-    np.random.seed(1211)
+         kappa=10, beta=1e-1, gamma=100, dir='results', seed=121):
+    random.seed(seed)
+    np.random.seed(seed)
 
     #Load autoencoder and MNIST dataset.
     AE_model = util.load_AE("mnist_AE_weights")
     data, model =  MNIST(), MNISTModel(torch.load('models/mnist.pt'))
 
     # Get model prediction for image_id.
-    orig_prob, orig_class, orig_prob_str = util.model_prediction(model, data.test_data[image_id].unsqueeze(0))
+    image = data.test_data[image_id].unsqueeze(0)
+    orig_prob, orig_class, orig_prob_str = util.model_prediction(model, image)
     target_label = orig_class
-    print("Image:{}, infer label:{}".format(image_id, target_label))
     orig_img, target = util.generate_data(data, image_id, target_label)
+    print("Image:{}, infer label:{}".format(image_id, target_label))
 
     # Create adversarial image from original image.
     attack = CEM(model, mode, AE_model, batch_size=1, learning_rate_init=1e-2,
