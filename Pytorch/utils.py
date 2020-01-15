@@ -20,7 +20,7 @@
 ## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
 from torch.nn import Module, Conv2d, LeakyReLU, MaxPool2d, Upsample, Sequential
-from torch import load, save, eye, uint8, from_numpy
+from torch import load, save, eye, uint8, from_numpy, argmax
 from torchsummary import summary
 
 import os
@@ -143,7 +143,7 @@ def generate_data(data, id, target_label):
     inputs = data.test_data[id]
     targets = eye(data.test_labels.shape[1])[target_label]
 
-    return inputs, target
+    return inputs, targets
 
 def model_prediction(model, inputs):
     """
@@ -151,7 +151,7 @@ def model_prediction(model, inputs):
     Returns: raw output, predicted class and raw output as string.
     """
     prob = model.predict(inputs)
-    predicted_class = torch.argmax(prob, dim=-1)
+    predicted_class = argmax(prob, dim=-1)
     prob_str = np.array2string(prob.cpu().data.numpy()).replace('\n','')
 
     return prob, predicted_class, prob_str
