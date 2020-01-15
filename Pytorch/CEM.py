@@ -61,13 +61,13 @@ class CEM:
 
         def compare(x, y):
             if not isinstance(x, (float, int, np.int64)):
-                x = np.copy(x)
+                x = x.clone()
                 # x[y] -= self.kappa if self.PP else -self.kappa
                 if self.mode == "PP":
                     x[y] -= self.kappa
                 elif self.mode == "PN":
                     x[y] += self.kappa
-                x = np.argmax(x)
+                x = torch.argmax(x)
             if self.mode == "PP":
                 return x==y
             elif self.mode == "PN":
@@ -76,15 +76,16 @@ class CEM:
         batch_size = self.batch_size
 
         # set the lower and upper bounds accordingly
-        lower_bound = np.zeros(batch_size)
-        c_start = np.ones(batch_size) * self.c_init
-        upper_bound = np.ones(batch_size) * 1e10
+        lower_bound = torch.zeros(batch_size)
+        c_start = torch.ones(batch_size) * self.c_init
+        upper_bound = torch.ones(batch_size) * 1e10
         # the best l2, score, and image attack
         overall_best_dist = [1e10] * batch_size
-        overall_best_attack = [np.zeros(imgs[0].shape)] * batch_size
+        overall_best_attack = [torch.zeros(imgs[0].shape)] * batch_size
 
         for _ in range(self.c_steps):
             # completely reset adam's internal state.
+            print(imgs.shape)
             img_batch = imgs[:batch_size]
             label_batch = labs[:batch_size]
 
@@ -92,6 +93,8 @@ class CEM:
             current_step_best_score = [-1] * batch_size
 
             # set the variables so that we don't have to send them over again
+            # print(img_batch.shape)
+
             orig_img = img_batch
             target_lab = label_batch
             adv_img = img_batch
@@ -102,8 +105,8 @@ class CEM:
                 adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, adv_img, self.adv_img_slack, orig_img)
                 self.optimizer.zero_grad()
                 self.optimizer = poly_lr_scheduler(self.optimizer, self.lr_init, iteration)
-                _, loss_EN, pred = evaluation.loss(self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
-                loss, _, _ = evaluation.loss(self.mode, orig_img, self.adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
+                _, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
+                loss, _, _ = evaluation.loss(self.model, self.mode, orig_img, self.adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
                 loss.backward()
                 self.optimizer.step()
 
@@ -117,16 +120,16 @@ class CEM:
                     sys.stdout.flush()
 
                 for batch_idx,(dist, score, the_adv_img) in enumerate(zip(loss_EN, pred, adv_img)):
-                    if dist < current_step_best_dist[batch_idx] and compare(score, np.argmax(label_batch[batch_idx])):
+                    if dist < current_step_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx])):
                         current_step_best_dist[batch_idx] = dist
-                        current_step_best_score[batch_idx] = np.argmax(score)
-                    if dist < overall_best_dist[batch_idx] and compare(score, np.argmax(label_batch[batch_idx])):
+                        current_step_best_score[batch_idx] = torch.argmax(score)
+                    if dist < overall_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx])):
                         overall_best_dist[batch_idx] = dist
                         overall_best_attack[batch_idx] = the_adv_img
 
             # adjust the constant as needed
             for batch_idx in range(batch_size):
-                if compare(current_step_best_score[batch_idx], np.argmax(label_batch[batch_idx])) and current_step_best_score[batch_idx] != -1:
+                if compare(current_step_best_score[batch_idx], torch.argmax(label_batch[batch_idx])) and current_step_best_score[batch_idx] != -1:
                     # success, divide const by two
                     upper_bound[batch_idx] = min(upper_bound[batch_idx], c_start[batch_idx])
                     if upper_bound[batch_idx] < 1e9:
@@ -141,5 +144,5 @@ class CEM:
                         c_start[batch_idx] *= 10
 
         # return the best solution found
-        overall_best_attack = overall_best_attack[0]
-        return overall_best_attack.reshape((1,) + overall_best_attack.shape)
+        return overall_best_attack[0].unsqueeze(0)
+        # return overall_best_attack.reshape((1,) + overall_best_attack.shape)

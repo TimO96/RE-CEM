@@ -142,3 +142,9 @@ class MNISTModel(Module):
 
         # Reshape data, expect (batch, channel, dim1, dim2)
         return self.model(data.view(-1, 1, self.image_size, self.image_size))
+
+# import torch
+# data = MNIST()
+# m = MNISTModel(torch.load('models/mnist.pt'))
+# ps = m.predict(data.test_data[0:10])
+# print(ps.shape)
