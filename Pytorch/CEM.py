@@ -55,7 +55,7 @@ class CEM:
         # Define FISTA optimization variables
         self.fista_c = torch.zeros((batch_size,), dtype=tf.float32, requires_grad=True)
         self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-        self.optimizer = torch.optim.SGD(params=adv_img_slack, self.lr_init)
+        self.optimizer = torch.optim.SGD(params=self.adv_img_slack, learning_rate = self.lr_init)
 
         # and here's what we use to assign them
         #self.assign_orig_img = torch.empty(shape, dtype=torch.float32)
@@ -104,14 +104,14 @@ class CEM:
             target_lab = label_batch
             const = CONST
             adv_img = img_batch
-            adv_img_slack = img_batch
+            self.adv_img_slack = img_batch
 
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
-                adv_img, adv_img_slack = fista(self.mode, beta, iteration, adv_img, adv_img_slack, orig_img)
+                adv_img, self.adv_img_slack = fista.fista(self.mode, beta, iteration, adv_img, self.adv_img_slack, orig_img)
                 self.optimizer.zero_grad()
                 self.optimizer = poly_lr_scheduler(self.optimizer, self.lr_init, iteration)
-                loss, loss_EN, OutputScore = loss(adv_img-orig_img, orig_img, target_lab, kappa, AE, const, beta)
+                loss, loss_EN, OutputScore = evaluation.loss(adv_img-orig_img, orig_img, target_lab, kappa, AE, const, beta)
                 loss.backward()
                 self.optimizer.step()
 
