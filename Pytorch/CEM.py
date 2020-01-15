@@ -103,7 +103,7 @@ class CEM:
                 adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, adv_img, self.adv_img_slack, orig_img)
                 self.optimizer.zero_grad()
                 self.optimizer = poly_lr_scheduler(self.optimizer, self.lr_init, iteration)
-                _, loss_EN, pred = evaluation.loss(self.mode, orig_img, self.adv_img, target_lab, self.kappa, self.AE, const, self.beta)
+                _, loss_EN, pred = evaluation.loss(self.mode, orig_img, adv_img, target_lab, self.kappa, self.AE, const, self.beta, to_optimize=False)
                 loss, _, _ = evaluation.loss(self.mode, orig_img, self.adv_img_slack, target_lab, self.kappa, self.AE, const, self.beta)
                 loss.backward()
                 self.optimizer.step()
