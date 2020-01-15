@@ -17,7 +17,7 @@ import urllib.request
 
 from torch.nn import Sequential, Conv2d, LeakyReLU, MaxPool2d, Flatten, Linear,\
                      Softmax, Module
-from torch import from_numpy
+from torch import from_numpy, load
 import sys
 
 def extract_data(filename, num_images, img_size=28):
@@ -134,6 +134,8 @@ class MNISTModel(Module):
         self.model = Sequential(*model)
 
         if restore:
+            print("RESTORE")
+            restore = load(restore)
             self.load_state_dict(restore)
 
     def predict(self, data):
