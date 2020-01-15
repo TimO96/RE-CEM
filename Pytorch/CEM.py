@@ -4,10 +4,9 @@
 ## (C) 2020 UvA FACT AI group
 
 import sys
-import tensorflow as tf
 import torch
 import numpy as np
-import torchvision
+#import torchvision
 import fista
 import evaluation
 
@@ -35,7 +34,7 @@ class CEM:
                                    function
         """
 
-        # Initialize the shape for the variables used for pertinent analysis
+        # Initialize the shape for the variables used for pertinent analysis.
         shape = (batch_size, \
                  model.image_size, model.image_size,  model.num_channels)
 
@@ -52,9 +51,7 @@ class CEM:
         self.beta = beta
         self.gamma = gamma
 
-        # Define FISTA optimization variables
-        self.fista_c = torch.zeros((batch_size,), dtype=tf.float32, requires_grad=True)
-        self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
+        # Initialize optimizer.
         self.optimizer = torch.optim.SGD(params=self.adv_img_slack, learning_rate = self.lr_init)
 
 
@@ -71,14 +68,14 @@ class CEM:
                 x = np.argmax(x)
             if self.mode == "PP":
                 return x==y
-            else:
+            elif self.mode == "PN":
                 return x!=y
 
         batch_size = self.batch_size
 
         # set the lower and upper bounds accordingly
         lower_bound = np.zeros(batch_size)
-        c_start = np.ones(batch_size) * self.init_const
+        c_start = np.ones(batch_size) * self.c_init
         upper_bound = np.ones(batch_size) * 1e10
         # the best l2, score, and image attack
         overall_best_dist = [1e10] * batch_size
@@ -98,7 +95,7 @@ class CEM:
             adv_img = img_batch
             self.adv_img_slack = img_batch
 
-            for iteration in range(self.MAX_ITERATIONS):
+            for iteration in range(self.max_iterations):
                 # perform the attack
                 adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, adv_img, self.adv_img_slack, orig_img)
                 self.optimizer.zero_grad()
@@ -109,8 +106,8 @@ class CEM:
                 self.optimizer.step()
 
 
-                if iteration%(self.MAX_ITERATIONS//10) == 0:
-                    print("iter:{} const:{}". format(iteration, CONST))
+                if iteration%(self.max_iterations//10) == 0:
+                    print("iter:{} const:{}". format(iteration, c_start))
                     print("Loss_Overall:{:.4f}". format(loss))
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
