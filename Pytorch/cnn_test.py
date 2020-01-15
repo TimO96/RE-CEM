@@ -8,4 +8,7 @@ label = mnist.test_labels.argmax(dim=1)
 
 acc = (pred == label).float().mean()
 
+for name, param in cnn.named_parameters():
+    print(name, param)
+
 print(acc)
