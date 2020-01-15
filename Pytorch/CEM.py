@@ -9,6 +9,7 @@ import torch
 import numpy as np
 import torchvision
 import fista
+import evaluation
 
 
 class CEM:
@@ -43,7 +44,7 @@ class CEM:
         self.mode = mode
         self.autoencoder = autoencoder
         self.batch_size = batch_size
-        self.learning_rate_init = learning_rate_init
+        self.lr_init = learning_rate_init
         self.c_init = c_init
         self.c_steps = c_steps
         self.max_iterations = max_iterations
@@ -51,16 +52,10 @@ class CEM:
         self.beta = beta
         self.gamma = gamma
 
-
-        # Define variables for the original image and perturbed image
-        self.orig_img = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-        self.adv_img = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-        self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-        self.target_lab = torch.zeros((batch_size, nun_classes), dtype=torch.float32)
-
         # Define FISTA optimization variables
         self.fista_c = torch.zeros((batch_size,), dtype=tf.float32, requires_grad=True)
-        self.global_step = torch.tensor(0.0, requires_grad=False)
+        self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
+        self.optimizer = torch.optim.SGD(params=adv_img_slack, self.lr_init)
 
         # and here's what we use to assign them
         #self.assign_orig_img = torch.empty(shape, dtype=torch.float32)
@@ -98,7 +93,6 @@ class CEM:
 
         for c_steps_idx in range(self.c_steps):
             # completely reset adam's internal state.
-            self.sess.run(self.init)
             img_batch = imgs[:batch_size]
             label_batch = labs[:batch_size]
 
@@ -106,27 +100,32 @@ class CEM:
             current_step_best_score = [-1] * batch_size
 
             # set the variables so that we don't have to send them over again
-            self.sess.run(self.setup, {self.assign_orig_img: img_batch,
-                                       self.assign_target_lab: label_batch,
-                                       self.assign_const: CONST,
-                                       self.assign_adv_img: img_batch,
-                                       self.assign_adv_img_slack: img_batch})
+            orig_img = img_batch
+            target_lab = label_batch
+            const = CONST
+            adv_img = img_batch
+            adv_img_slack = img_batch
 
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
-                self.sess.run([self.train])
-                self.sess.run([self.adv_updater, self.adv_updater_s])
+                adv_img, adv_img_slack = fista(self.mode, beta, iteration, adv_img, adv_img_slack, orig_img)
+                self.optimizer.zero_grad()
+                self.optimizer = poly_lr_scheduler(self.optimizer, self.lr_init, iteration)
+                loss, loss_EN, OutputScore = loss(adv_img-orig_img, orig_img, target_lab, kappa, AE, const, beta)
+                loss.backward()
+                self.optimizer.step()
 
-                Loss_Overall, Loss_EN, OutputScore, adv_img = self.sess.run([self.Loss_Overall, self.EN_dist, self.ImgToEnforceLabel_Score, self.adv_img])
-                Loss_Attack, Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist = self.sess.run([self.Loss_Attack, self.Loss_L2Dist, self.Loss_L1Dist, self.Loss_AE_Dist])
-                target_lab_score, max_nontarget_lab_score_s = self.sess.run([self.target_lab_score, self.max_nontarget_lab_score])
+
+                #Loss_Overall, Loss_EN, OutputScore, adv_img = self.sess.run([self.Loss_Overall, self.EN_dist, self.ImgToEnforceLabel_Score, self.adv_img])
+                #Loss_Attack, Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist = self.sess.run([self.Loss_Attack, self.Loss_L2Dist, self.Loss_L1Dist, self.Loss_AE_Dist])
+                #target_lab_score, max_nontarget_lab_score_s = self.sess.run([self.target_lab_score, self.max_nontarget_lab_score])
 
                 if iteration%(self.MAX_ITERATIONS//10) == 0:
                     print("iter:{} const:{}". format(iteration, CONST))
-                    print("Loss_Overall:{:.4f}, Loss_Attack:{:.4f}". format(Loss_Overall, Loss_Attack))
-                    print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
-                    print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
-                    print("")
+                    print("Loss_Overall:{:.4f}". format(loss))
+                    #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
+                    #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
+                    #print("")
                     sys.stdout.flush()
 
                 for batch_idx,(the_dist, the_score, the_adv_img) in enumerate(zip(Loss_EN, OutputScore, adv_img)):
@@ -155,4 +154,4 @@ class CEM:
 
         # return the best solution found
         overall_best_attack = overall_best_attack[0]
-        return overalla_best_attack.reshape((1,) + overall_best_attack.shape)
+        return overall_best_attack.reshape((1,) + overall_best_attack.shape)

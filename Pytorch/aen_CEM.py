@@ -131,15 +131,11 @@ class AEADEN:
         self.Loss_Attack_s  = torch.sum(self.const * Loss_Attack_s)
 
         if self.mode == "PP":
-            dist = (self.AE(self.delta_img)-self.delta_img)/torch.sqrt((self.AE(self.delta_img)-self.delta_img**2))
-            dist_s = (self.AE(self.delta_img)-self.delta_img)/torch.sqrt((self.AE(self.delta_img_s)-self.delta_img_s**2))
-            self.Loss_AE_Dist   = self.gamma * (dist**2)
-            self.Loss_AE_Dist_s = self.gamma * (dist_s**2)
+            self.Loss_AE_Dist   = self.gamma*torch.norm(self.AE(self.delta_img)-self.delta_img)**2
+            self.Loss_AE_Dist_s = self.gamma*torch.norm(self.AE(self.delta_img)-self.delta_img_s)**2
         elif self.mode == "PN":
-            dist = (self.AE(self.adv_img)-self.adv_img)/torch.sqrt((self.AE(self.adv_img)-self.adv_img**2))
-            dist_s = (self.AE(self.adv_img)-self.adv_img)/torch.sqrt((self.AE(self.adv_img)-self.adv_img_s**2)) # POSSIBLE MISTAKE??
-            self.Loss_AE_Dist   = self.gamma * (dist**2)
-            self.Loss_AE_Dist_s = self.gamma * (dist_s**2)
+            self.Loss_AE_Dist   = self.gamma*torch.norm(self.AE(self.adv_img)-self.adv_img)**2
+            self.Loss_AE_Dist_s = self.gamma*torch.norm(self.AE(self.adv_img_s)-self.adv_img_s)**2
 
         self.Loss_ToOptimize = self.Loss_Attack_s + self.Loss_L2Dist_s + self.Loss_AE_Dist_s
         self.Loss_Overall    = self.Loss_Attack   + self.Loss_L2Dist   + self.Loss_AE_Dist   + torch.mul(self.beta, self.Loss_L1Dist)
