@@ -49,7 +49,6 @@ def main(args):
         AE_model = util.load_AE("mnist_AE_1")
         data, model =  MNIST(), MNISTModel("models/mnist", sess, False)
         #data, model =  MNIST(), MNISTModel(None, sess, False)
-
         orig_prob, orig_class, orig_prob_str = util.model_prediction(model, np.expand_dims(data.test_data[image_id], axis=0))
         target_label = orig_class
         print("Image:{}, infer label:{}".format(image_id, target_label))

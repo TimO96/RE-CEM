@@ -166,7 +166,7 @@ class AEADEN:
                 x = np.argmax(x)
             if self.mode == "PP":
                 return x==y
-            else: 
+            else:
                 return x!=y
 
         batch_size = self.batch_size
@@ -178,6 +178,7 @@ class AEADEN:
         # the best l2, score, and image attack
         overall_best_dist = [1e10]*batch_size
         overall_best_attack = [np.zeros(imgs[0].shape)]*batch_size
+
 
         for binary_search_steps_idx in range(self.BINARY_SEARCH_STEPS):
             # completely reset adam's internal state.
@@ -195,10 +196,15 @@ class AEADEN:
                                        self.assign_adv_img: img_batch,
                                        self.assign_adv_img_s: img_batch})
 
+            print('------------------------------------------------')
+            print(self.sess.run(self.global_step))
+
             for iteration in range(self.MAX_ITERATIONS):
                 # perform the attack
                 self.sess.run([self.train])
                 self.sess.run([self.adv_updater, self.adv_updater_s])
+
+
 
                 Loss_Overall, Loss_EN, OutputScore, adv_img = self.sess.run([self.Loss_Overall, self.EN_dist, self.ImgToEnforceLabel_Score, self.adv_img])
                 Loss_Attack, Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist = self.sess.run([self.Loss_Attack, self.Loss_L2Dist, self.Loss_L1Dist, self.Loss_AE_Dist])
