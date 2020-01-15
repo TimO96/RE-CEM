@@ -6,6 +6,7 @@
 **/*.ipynb_checkpoints/
 
 *.pyc
+*.swp
 
 Pytorch/.vscode/settings.json
 Original_Code/.vscode/settings.json
