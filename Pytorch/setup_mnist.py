@@ -144,7 +144,7 @@ class MNISTModel(Module):
 
         # Reshape data, expect (batch, channel, dim1, dim2)
         # return self.model(data.view(-1, 1, self.image_size, self.image_size))
-        return self.model(data.permute(0,3,2,1))
+        return self.model(data.permute(0,3,1,2))
 
     def forward(self, data):
         """alias."""

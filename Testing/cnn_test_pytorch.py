@@ -1,3 +1,8 @@
+import os
+import sys
+os.chdir("../Pytorch/")
+sys.path.append("../Pytorch/")
+
 from setup_mnist import MNIST, MNISTModel
 from torch import load, from_numpy
 # from utils import h5_to_state_dict
@@ -70,10 +75,7 @@ cnn = MNISTModel(restore="models/mnist.pt")
 
 pred = cnn.predict(mnist.test_data).argmax(dim=1)
 label = mnist.test_labels.argmax(dim=1)
-print(label)
 
-print(pred)
-print(label)
 acc = (pred == label).float().mean()
 
 # for name, param in cnn.named_parameters():

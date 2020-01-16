@@ -1,3 +1,8 @@
+import os
+import sys
+os.chdir("../Original_Code/")
+sys.path.append("../Original_Code/")
+
 from setup_mnist import MNIST, MNISTModel
 import numpy as np
 import tensorflow as tf
@@ -16,7 +21,6 @@ with tf.Session() as sess:
     # for var in tf.all_variables():
     #    print(var.eval())
 
-
-acc = (pred == label).mean()
+    acc = (pred == label).mean()
 
 print(acc)
