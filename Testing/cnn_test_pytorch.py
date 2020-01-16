@@ -4,7 +4,7 @@ os.chdir("../Pytorch/")
 sys.path.append("../Pytorch/")
 
 from setup_mnist import MNIST, MNISTModel
-from torch import load, from_numpy
+from torch import load, from_numpy, mean
 # from utils import h5_to_state_dict
 from torchsummary import summary
 import h5py
@@ -20,12 +20,35 @@ def find(name, item):
 f = h5py.File(weight_file, 'r')
 f.visititems(find)
 
-def h5_to_state_dict(h5_file, mapping):
+def h5_to_state_dict(h5_file, mapping, m2):
     """Create Pytorch state_dict from h5 weight with mapping."""
     state_dict = {}
     with h5py.File(h5_file, 'r') as f:
         for h5, state in mapping.items():
-            state_dict[state] = from_numpy(f[h5][:].T)
+            data = f[h5][:]
+            if len(data.shape) > 3:
+                d = data.transpose((3,2,1,0))
+                print(d.shape)
+                state_dict[state] = from_numpy(d)
+            elif len(data.shape) > 1:
+                d = data.transpose((1,0))
+                print(d.shape)
+                state_dict[state] = from_numpy(d)
+            else:
+                state_dict[state] = from_numpy(data)
+
+        for h5, state in m2.items():
+            data = f[h5][:]
+            if len(data.shape) > 3:
+                d = data.transpose((3,2,0,1))
+                print(d.shape)
+                state_dict[state] += from_numpy(d)
+            elif len(data.shape) > 1:
+                d = data.transpose((1,0))
+                print(d.shape)
+                state_dict[state] += from_numpy(d)
+            else:
+                state_dict[state] += from_numpy(data)
     return state_dict
 
 # AE mapping
@@ -63,7 +86,7 @@ cnn_map = {
     'model_weights/dense_6/dense_6/kernel:0'   : 'model.15.weight',
 }
 
-cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map1))
+cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map))
 summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels), device="cpu")
 
 mnist = MNIST()
@@ -74,11 +97,10 @@ cnn.model.eval()
 for name, param in cnn.model.named_parameters():
      param.requires_grad = False
 
-for name, param in cnn.model.named_parameters():
-    print(name, ':', param.requires_grad)
 
-pred = cnn.predict(mnist.test_data[:100]).argmax(dim=1)
-label = mnist.test_labels[:100].argmax(dim=1)
+pred = cnn.predict(mnist.test_data).argmax(dim=1)
+print((pred == 4).sum())
+label = mnist.test_labels.argmax(dim=1)
 
 acc = (pred == label).float().mean()
 
@@ -87,4 +109,4 @@ acc = (pred == label).float().mean()
 # for name, param in cnn.named_parameters():
 #     print(name, param)
 
-print(acc)
+print(round(acc.item(),2))

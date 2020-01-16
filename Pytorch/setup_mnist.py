@@ -21,26 +21,8 @@ from torch import from_numpy, load
 import sys
 from torchsummary import summary
 
-def extract_data(filename, num_images, img_size=28):
-    """Read MNIST image file as pytorch tensor."""
-    with gzip.open(filename) as bytestream:
-        bytestream.read(16)
-        buf = bytestream.read(num_images*img_size*img_size)
-        data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
-        data = (data / 255) - 0.5
-        data = data.reshape(num_images, img_size, img_size, 1)
-    return from_numpy(data)
-
-def extract_labels(filename, num_images):
-    """Read MNIST label file as pytorch tensor."""
-    with gzip.open(filename) as bytestream:
-        bytestream.read(8)
-        buf = bytestream.read(1 * num_images)
-        labels = np.frombuffer(buf, dtype=np.uint8)
-    return from_numpy((np.arange(10) == labels[:, None]).astype(np.float32))
-
 class MNIST:
-    def __init__(self, force=False):
+    def __init__(self, device='cuda', force=False):
         """Load MNIST dataset, optionally force to download and overwrite."""
         self.n_train = 60000
         self.n_test  = 10000
@@ -62,18 +44,18 @@ class MNIST:
         self.test_r_path = self.fetch("t10k-labels-idx1-ubyte.gz")
 
         # Get Test data
-        self.test_data = extract_data(self.test_x_path, self.n_test)
-        self.test_labels = extract_labels(self.test_r_path, self.n_test)
+        self.test_data = MNIST.extract_data(self.test_x_path, self.n_test).to(device)
+        self.test_labels = MNIST.extract_labels(self.test_r_path, self.n_test).to(device)
 
         # Get Train data
-        train_data = extract_data(self.train_x_path, self.n_train)
-        train_labels = extract_labels(self.train_r_path, self.n_train)
-        self.train_data = train_data[self.n_valid:, :, :, :]
-        self.train_labels = train_labels[self.n_valid:]
+        train_data = MNIST.extract_data(self.train_x_path, self.n_train)
+        train_labels = MNIST.extract_labels(self.train_r_path, self.n_train)
+        self.train_data = train_data[self.n_valid:, :, :, :].to(device)
+        self.train_labels = train_labels[self.n_valid:].to(device)
 
         # Get Validation data from training data
-        self.validation_data = train_data[:self.n_valid, :, :, :]
-        self.validation_labels = train_labels[:self.n_valid]
+        self.validation_data = train_data[:self.n_valid, :, :, :].to(device)
+        self.validation_labels = train_labels[:self.n_valid].to(device)
 
     def fetch(self, file):
         """Get file from self.url if not already present locally."""
@@ -81,6 +63,24 @@ class MNIST:
         if self.force or not os.path.exists(path):
             urllib.request.urlretrieve(self.mnist_url+file, path)
         return path
+
+    def extract_data(filename, num_images, img_size=28):
+        """Read MNIST image file as pytorch tensor."""
+        with gzip.open(filename) as bytestream:
+            bytestream.read(16)
+            buf = bytestream.read(num_images*img_size*img_size)
+            data = np.frombuffer(buf, dtype=np.uint8).astype(np.float32)
+            data = (data / 255) - 0.5
+            data = data.reshape(num_images, img_size, img_size, 1)
+        return from_numpy(data)
+
+    def extract_labels(filename, num_images):
+        """Read MNIST label file as pytorch tensor."""
+        with gzip.open(filename) as bytestream:
+            bytestream.read(8)
+            buf = bytestream.read(1 * num_images)
+            labels = np.frombuffer(buf, dtype=np.uint8)
+        return from_numpy((np.arange(10) == labels[:, None]).astype(np.float32))
 
 class MNISTModel(Module):
     def __init__(self, restore=None, use_log=False):
@@ -140,14 +140,14 @@ class MNISTModel(Module):
     def predict(self, data):
         """Predict output of MNISTModel for input data (batch, dim1, dim2, c)."""
         # print(data.shape)
-        # assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
+        assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
 
         # Reshape data, expect (batch, channel, dim1, dim2)
-        # return self.model(data.view(-1, 1, self.image_size, self.image_size))
-        return self.model(data.permute(0,3,1,2))
+        return self.model(data.view(-1, 1, self.image_size, self.image_size))
+        # return self.model(data.permute(0,3,2,1))
 
     def forward(self, data):
-        """alias."""
+        """Predict alias."""
         return self.predict(data)
 
 # import torch
