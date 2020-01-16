@@ -19,6 +19,7 @@ from torch.nn import Sequential, Conv2d, LeakyReLU, MaxPool2d, Flatten, Linear,\
                      Softmax, Module
 from torch import from_numpy, load
 import sys
+from torchsummary import summary
 
 def extract_data(filename, num_images, img_size=28):
     """Read MNIST image file as pytorch tensor."""
@@ -134,12 +135,23 @@ class MNISTModel(Module):
         self.model = Sequential(*model)
 
         if restore:
-            restore = load(restore)
             self.load_state_dict(restore)
 
     def predict(self, data):
         """Predict output of MNISTModel for input data (batch, dim1, dim2, c)."""
-        assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
+        # print(data.shape)
+        # assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
 
         # Reshape data, expect (batch, channel, dim1, dim2)
-        return self.model(data.view(-1, 1, self.image_size, self.image_size))
+        # return self.model(data.view(-1, 1, self.image_size, self.image_size))
+        return self.model(data.permute(0,3,2,1))
+
+    def forward(self, data):
+        """alias."""
+        return self.predict(data)
+
+# import torch
+# data = MNIST()
+# m = MNISTModel(torch.load('models/mnist.pt'))
+# ps = m.predict(data.test_data[0:10])
+# print(ps.shape)

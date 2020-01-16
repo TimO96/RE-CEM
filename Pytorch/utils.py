@@ -22,6 +22,7 @@
 from torch.nn import Module, Conv2d, LeakyReLU, MaxPool2d, Upsample, Sequential
 from torch import load, save, eye, uint8, from_numpy, argmax
 from torchsummary import summary
+from PIL import Image
 
 import os
 import h5py
@@ -125,7 +126,7 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
 
     return ae
 
-def save_img(img, name="output"):
+def save_img(img, name="output.png"):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save tensor
     save(img, name+'.pt')
@@ -133,7 +134,8 @@ def save_img(img, name="output"):
     # Save image, invert MNIST read
     fig = ((img + 0.5) * 255).round()
     fig = fig.type(uint8).squeeze()
-    save_image(fig, name+'.png')
+    pic = Image.fromarray(fig.cpu().data.numpy())
+    pic.save(name+'.png')
 
 def generate_data(data, id, target_label):
     """
@@ -154,7 +156,7 @@ def model_prediction(model, inputs):
     predicted_class = argmax(prob, dim=-1)
     prob_str = np.array2string(prob.cpu().data.numpy()).replace('\n','')
 
-    return prob, predicted_class, prob_str
+    return prob, predicted_class.item(), prob_str
 
 # Example
 # ae = load_AE('mnist_AE_weights', True)

@@ -5,12 +5,13 @@
 
 import torch
 
-def loss(mode, orig_img, adv, target_lab, autoencoder, c_start, kappa, gamma, \
-         beta, to_optimize=True):
+def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
+         gamma, beta, to_optimize=True):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PN) or pertinent negatives (PN).
     Input:
+        - model         : nn model
         - mode          : perform either PN or PP analysis
         - orig_img      : image from dataset
         - delta         : last perturbation
@@ -35,11 +36,12 @@ def loss(mode, orig_img, adv, target_lab, autoencoder, c_start, kappa, gamma, \
     elastic_dist = L2_dist + L1_dist * beta
 
     # Calculate the total loss for the adversarial attack.
-    loss_attack, pred = loss_function(mode, orig_img, delta, target_lab, kappa)
+    loss_attack, pred = loss_function(model, mode, orig_img, delta, target_lab, kappa)
 
     # Sum up the losses.
     loss_L1_dist = torch.sum(L1_dist)
     loss_L2_dist = torch.sum(L2_dist)
+
     loss_attack = torch.sum(c_start * loss_attack)
 
     # Based on the mode compute the last term of the objective function which
@@ -57,13 +59,14 @@ def loss(mode, orig_img, adv, target_lab, autoencoder, c_start, kappa, gamma, \
     else:
         loss = loss_attack + loss_L2_dist + loss_AE_dist + loss_L1_dist * beta
 
-    return loss, EN_dist, pred
+    return loss, elastic_dist, pred
 
-def loss_function(mode, orig_img, delta, target_lab, kappa):
+def loss_function(model, mode, orig_img, delta, target_lab, kappa):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PN) or pertinent negatives (PN).
     Input:
+        - model         : nn model
         - mode          : perform either PN or PP analysis
         - orig_img      : image from dataset
         - delta         : last perturbation
@@ -83,17 +86,18 @@ def loss_function(mode, orig_img, delta, target_lab, kappa):
 
     # Compute the probability of the label class versus the maximum others.
     target_lab_score = torch.sum((target_lab) * pred, dim=1)
-
     # Inflate the real label in one-hot vector target_lab to infinity such that
     # the best class from the other classes is predicted.
-    max_nontarget_lab_score = torch.max((1-target_lab) * pred - \
-                                        (target_lab*float('inf')), dim=1)
+    max_nontarget_lab_score = torch.max(pred[(1-target_lab).bool()])
 
+    zero = torch.tensor([0.])
     if mode == "PP":
-        loss_attack = torch.max(0.0, max_nontarget_lab_score - \
+        loss_attack = torch.max(zero, max_nontarget_lab_score - \
                                 target_lab_score + kappa)
     elif mode == "PN":
-        loss_attack = torch.max(0.0, -max_nontarget_lab_score + \
+        # print(max_nontarget_lab_score)
+        # print(type(max_nontarget_lab_score))
+        loss_attack = torch.max(zero, -max_nontarget_lab_score + \
                                 target_lab_score + kappa)
 
     return loss_attack, pred
