@@ -69,12 +69,20 @@ summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels), device="cpu")
 mnist = MNIST()
 
 plt.imshow(np.squeeze(mnist.test_data[4]))
-plt.show()
+#plt.show()
+cnn.model.eval()
+for name, param in cnn.model.named_parameters():
+     param.requires_grad = False
 
-pred = cnn.predict(mnist.test_data).argmax(dim=1)
-label = mnist.test_labels.argmax(dim=1)
+for name, param in cnn.model.named_parameters():
+    print(name, ':', param.requires_grad)
+
+pred = cnn.predict(mnist.test_data[:100]).argmax(dim=1)
+label = mnist.test_labels[:100].argmax(dim=1)
 
 acc = (pred == label).float().mean()
+
+
 
 # for name, param in cnn.named_parameters():
 #     print(name, param)
