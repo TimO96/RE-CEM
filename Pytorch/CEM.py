@@ -10,6 +10,8 @@ import numpy as np
 import fista
 import evaluation
 from polynomial_decay import poly_lr_scheduler
+from torchvision import utils
+from torch.autograd import Variable
 
 
 class CEM:
@@ -95,12 +97,13 @@ class CEM:
             orig_img = img_batch
             target_lab = label_batch
             self.adv_img = img_batch
-            self.adv_img_slack = img_batch.requires_grad_(True)
+            self.adv_img_slack = Variable(img_batch, requires_grad=True)
             self.optimizer = torch.optim.SGD(params=[self.adv_img_slack], lr = self.lr_init)
+            utils.save_image(orig_img.squeeze(), 'original_image.png')
 
             for iteration in range(self.max_iterations):
                 # perform the attack
-                self.adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, self.adv_img, self.adv_img_slack, orig_img)
+                #self.adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, self.adv_img, self.adv_img_slack, orig_img)
                 self.optimizer.zero_grad()
                 self.optimizer = poly_lr_scheduler(self.optimizer, self.lr_init, iteration)
                 loss_no_opt, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, self.adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
@@ -108,9 +111,41 @@ class CEM:
                 loss.backward(retain_graph=True)
                 self.optimizer.step()
 
+                self.adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, self.adv_img, self.adv_img_slack, orig_img)
+
+                '''
+
+                z = self.adv_img_slack - orig_img
+                adv_img_update = (z > self.beta) * torch.min((self.adv_img_slack - self.beta), torch.tensor(0.5)) + \
+                               (torch.abs(z) <= self.beta) * orig_img + \
+                               (z < -self.beta) * torch.max((self.adv_img_slack + self.beta), torch.tensor(-0.5))
+
+                z_delta = adv_img_update - orig_img
+
+                if self.mode == "PP":
+                    adv_img_update = (z_delta <= 0) * adv_img_update + (z_delta > 0) * orig_img
+                elif self.mode == "PN":
+                    adv_img_update = (z_delta > 0) * adv_img_update + (z_delta <= 0) * orig_img
+
+                # Slack update.
+                zt = iteration / (iteration + torch.tensor(3))
+                adv_img_slack_update = adv_img_update + zt * (adv_img_update - self.adv_img)
+                z_slack = adv_img_slack_update - orig_img
+
+                if self.mode == "PP":
+                    adv_img_slack_update = (z_slack <= 0) * adv_img_slack_update + (z_slack > 0) * orig_img
+                elif self.mode == "PN":
+                    adv_img_slack_update = (z_slack > 0) * adv_img_slack_update + (z_slack <= 0) * orig_img
+
+                self.adv_img = adv_img_update
+                self.adv_img_slack = adv_img_slack_update
+
+                '''
+
                 if iteration%(self.max_iterations//10) == 0:
                     print("iter:{} const:{}". format(iteration, c_start))
                     print("Loss_Overall:{:.4f}". format(loss_no_opt))
+                    utils.save_image(self.adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
                     #print("")
