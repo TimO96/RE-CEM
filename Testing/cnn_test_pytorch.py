@@ -1,8 +1,15 @@
+import os
+import sys
+os.chdir("../Pytorch/")
+sys.path.append("../Pytorch/")
+
 from setup_mnist import MNIST, MNISTModel
 from torch import load, from_numpy, mean
 # from utils import h5_to_state_dict
 from torchsummary import summary
 import h5py
+import numpy as np
+import matplotlib.pylab as plt
 
 weight_file = '../Original_Code/models/mnist'
 
@@ -79,21 +86,17 @@ cnn_map = {
     'model_weights/dense_6/dense_6/kernel:0'   : 'model.15.weight',
 }
 
-cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map, cnn_map1))
-summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels))
-# cnn.eval()
+cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map))
+summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels), device="cpu")
 
 mnist = MNIST()
-pred = cnn.predict(mnist.train_data[0:1000]).argmax(dim=-1)
-label = mnist.train_labels.argmax(dim=-1)[0:1000]
 
-print(pred-label)
+plt.imshow(np.squeeze(mnist.test_data[4]))
+plt.show()
 
-
-print(pred)
-print(label)
-print(mean((pred-label).float()))
-
+pred = cnn.predict(mnist.test_data).argmax(dim=1)
+print((pred == 4).sum())
+label = mnist.test_labels.argmax(dim=1)
 
 acc = (pred == label).float().mean()
 
