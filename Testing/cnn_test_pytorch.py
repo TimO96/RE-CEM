@@ -63,7 +63,7 @@ cnn_map = {
     'model_weights/dense_6/dense_6/kernel:0'   : 'model.15.weight',
 }
 
-cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map1))
+cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map))
 summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels), device="cpu")
 
 mnist = MNIST()
@@ -72,6 +72,7 @@ plt.imshow(np.squeeze(mnist.test_data[4]))
 plt.show()
 
 pred = cnn.predict(mnist.test_data).argmax(dim=1)
+print((pred == 4).sum())
 label = mnist.test_labels.argmax(dim=1)
 
 acc = (pred == label).float().mean()
