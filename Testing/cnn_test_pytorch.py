@@ -64,14 +64,12 @@ cnn_map = {
 }
 
 cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map1))
-summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels))
+summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels), device="cpu")
 
 mnist = MNIST()
 
 plt.imshow(np.squeeze(mnist.test_data[4]))
 plt.show()
-
-cnn = MNISTModel(restore="models/mnist.pt")
 
 pred = cnn.predict(mnist.test_data).argmax(dim=1)
 label = mnist.test_labels.argmax(dim=1)
