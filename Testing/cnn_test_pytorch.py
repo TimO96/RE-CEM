@@ -4,7 +4,7 @@ os.chdir("../Pytorch/")
 sys.path.append("../Pytorch/")
 
 from setup_mnist import MNIST, MNISTModel
-from torch import load, from_numpy
+from torch import load, from_numpy, mean
 # from utils import h5_to_state_dict
 from torchsummary import summary
 import h5py
@@ -20,12 +20,35 @@ def find(name, item):
 f = h5py.File(weight_file, 'r')
 f.visititems(find)
 
-def h5_to_state_dict(h5_file, mapping):
+def h5_to_state_dict(h5_file, mapping, m2):
     """Create Pytorch state_dict from h5 weight with mapping."""
     state_dict = {}
     with h5py.File(h5_file, 'r') as f:
         for h5, state in mapping.items():
-            state_dict[state] = from_numpy(f[h5][:].T)
+            data = f[h5][:]
+            if len(data.shape) > 3:
+                d = data.transpose((3,2,1,0))
+                print(d.shape)
+                state_dict[state] = from_numpy(d)
+            elif len(data.shape) > 1:
+                d = data.transpose((1,0))
+                print(d.shape)
+                state_dict[state] = from_numpy(d)
+            else:
+                state_dict[state] = from_numpy(data)
+
+        for h5, state in m2.items():
+            data = f[h5][:]
+            if len(data.shape) > 3:
+                d = data.transpose((3,2,0,1))
+                print(d.shape)
+                state_dict[state] += from_numpy(d)
+            elif len(data.shape) > 1:
+                d = data.transpose((1,0))
+                print(d.shape)
+                state_dict[state] += from_numpy(d)
+            else:
+                state_dict[state] += from_numpy(data)
     return state_dict
 
 # AE mapping
@@ -80,4 +103,4 @@ acc = (pred == label).float().mean()
 # for name, param in cnn.named_parameters():
 #     print(name, param)
 
-print(acc)
+print(round(acc.item(),2))
