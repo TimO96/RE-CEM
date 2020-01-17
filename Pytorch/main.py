@@ -30,7 +30,7 @@ from torch import cuda
 import utils as util
 from CEM import CEM
 
-def main(image_id, arg_max_iter=100, c_steps=9, init_const=10.0, mode="PN",
+def main(image_id, arg_max_iter=10000, c_steps=9, init_const=10.0, mode="PN",
          kappa=10, beta=1e-1, gamma=0, dir='results', seed=121):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
     random.seed(seed)
