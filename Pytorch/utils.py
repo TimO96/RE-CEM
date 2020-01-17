@@ -126,15 +126,16 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
 
     return ae
 
-def save_img(img, name="output.png"):
+def save_img(img, name="output.png", save_tensor=True):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save tensor
-    save(img, name+'.pt')
+    if save_tensor:
+        save(img, name+'.pt')
 
     # Save image, invert MNIST read
-    fig = ((img + 0.5) * 255).round()
-    fig = fig.type(uint8).squeeze()
-    pic = Image.fromarray(fig.cpu().data.numpy())
+    fig = np.around((img.detach().numpy() + 0.5) * 255)
+    fig = fig.astype(np.uint8).squeeze()
+    pic = Image.fromarray(fig)
     pic.save(name+'.png')
 
 def generate_data(data, id, target_label):
