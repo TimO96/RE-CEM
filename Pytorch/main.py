@@ -26,22 +26,25 @@ import random
 import time
 from setup_mnist import MNIST, MNISTModel
 import torch
+from torch import cuda
 import utils as util
 from CEM import CEM
 
-def main(image_id, arg_max_iter=10, c_steps=9, init_const=10.0, mode="PN",
-         kappa=10, beta=1e-1, gamma=100, dir='results', seed=121):
+def main(image_id, arg_max_iter=10000, c_steps=9, init_const=10.0, mode="PN",
+         kappa=10, beta=1e-1, gamma=0, dir='results', seed=121):
+    dvc = 'cuda:0' if cuda.is_available() else 'cpu'
     random.seed(seed)
     np.random.seed(seed)
 
     #Load autoencoder and MNIST dataset.
-    AE_model = util.load_AE("mnist_AE_weights")
-    data, model =  MNIST(), MNISTModel(torch.load('models/mnist.pt'))
+    AE_model = util.load_AE("mnist_AE_weights").to(dvc)
+    data, model =  MNIST(dvc), MNISTModel(torch.load('models/mnist.pt')).to(dvc)
 
     # Get model prediction for image_id.
     image = data.test_data[image_id].unsqueeze(0)
     orig_prob, orig_class, orig_prob_str = util.model_prediction(model, image)
     target_label = orig_class
+
     orig_img, target = util.generate_data(data, image_id, target_label)
     print("Image:{}, infer label:{}".format(image_id, target_label))
 
@@ -71,11 +74,11 @@ def main(image_id, arg_max_iter=10, c_steps=9, init_const=10.0, mode="PN",
     #Save image to Results
     suffix = f"id{image_id}_kappa{kappa}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
     save_dir = f"{dir}/{mode}_ID{image_id}_Gamma_{gamma}"
-    os.system(f"mkdir -p {dir}/{save_dir}")
+    os.system(f"mkdir -p {save_dir}")
     util.save_img(orig_img, f"{save_dir}/Orig_original{orig_class}")
     util.save_img(adv_img, f"{save_dir}/Adv_{suffix}")
     util.save_img(torch.abs(orig_img-adv_img)-0.5, f"{save_dir}/Delta_{suffix}")
 
     sys.stdout.flush()
 
-main(image_id=2950)
+main(image_id=2950, mode="PP")

@@ -144,7 +144,7 @@ def generate_data(data, id, target_label):
     Expects data to be MNIST pytorch.
     """
     inputs = data.test_data[id]
-    targets = eye(data.test_labels.shape[1])[target_label]
+    targets = eye(data.test_labels.shape[1], device=inputs.device)[target_label]
 
     return inputs, targets
 
