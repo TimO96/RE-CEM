@@ -1,4 +1,6 @@
 from setup_mnist import *
+from utils import AE
+
 from torch.optim import SGD, Adam, Adadelta, Adagrad
 from torch.nn import CrossEntropyLoss
 from torch import mean as torch_mean
@@ -6,6 +8,7 @@ from torch import argmax as torch_argmax
 from torch import save, cuda, manual_seed
 from torch.backends import cudnn
 import argparse
+
 
 class Dataset:
     def __init__(self, data, model, device='cuda:0', random=123):
@@ -15,10 +18,10 @@ class Dataset:
         self.model = model.to(device)
         self.device = device
 
-        manual_seed(random)
-        if cuda.is_available():
-            cudnn.deterministic = True
-            cudnn.benchmark = False
+        # manual_seed(random)
+        # if cuda.is_available():
+            # cudnn.deterministic = True
+            # cudnn.benchmark = False
 
     def train(self, epochs=3, optim=Adam, criterion=CrossEntropyLoss(),
               stats=1000, batch=500, optim_params={'lr':0.01}):
@@ -115,15 +118,18 @@ def train_model(dset, **kwargs):
     device = 'cuda:0' if cuda.is_available() else 'cpu'
     if dset == 'MNIST':
         dataset = Dataset(MNIST(device), MNISTModel(), device)
+    elif dset == 'MNIST_AE':
+        dataset = Dataset(MNIST(device), AE(), device)
     else:
         raise ModuleNotFoundError(f"Unsupported dataset {d}")
 
     dataset.train(batch=64, **kwargs)
-    # dataset.save_model()
+    dataset.save_model()
     dataset.report_performance()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str, default="MNIST")
     args = vars(parser.parse_args())
-    search(args['dataset'])
+    # search(args['dataset'])
+    train_model(args['dataset'])
