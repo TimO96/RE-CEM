@@ -29,3 +29,30 @@ results should be in separated`
 
 # Questions 17/01
  - Skribbl.io?
+ - Trying to get .996:
+```
+<class 'torch.optim.adam.Adam'> 0.01
+Train: 0.97 test: 0.974 valid: 0.973
+<class 'torch.optim.adam.Adam'> 0.001
+Train: 0.99 test: 0.986 valid: 0.983
+<class 'torch.optim.adam.Adam'> 0.0001
+Train: 0.98 test: 0.978 valid: 0.978
+<class 'torch.optim.sgd.SGD'> 0.01
+Train: 0.78 test: 0.789 valid: 0.788
+<class 'torch.optim.sgd.SGD'> 0.001
+Train: 0.1 test: 0.101 valid: 0.099
+<class 'torch.optim.sgd.SGD'> 0.0001
+Train: 0.11 test: 0.112 valid: 0.108
+<class 'torch.optim.adadelta.Adadelta'> 0.01
+Train: 0.64 test: 0.649 valid: 0.646
+<class 'torch.optim.adadelta.Adadelta'> 0.001
+Train: 0.1 test: 0.101 valid: 0.099
+<class 'torch.optim.adadelta.Adadelta'> 0.0001
+Train: 0.12 test: 0.12 valid: 0.123
+<class 'torch.optim.adagrad.Adagrad'> 0.01
+Train: 0.99 test: 0.991 valid: 0.99
+<class 'torch.optim.adagrad.Adagrad'> 0.001
+Train: 0.95 test: 0.957 valid: 0.96
+<class 'torch.optim.adagrad.Adagrad'> 0.0001
+```
+
