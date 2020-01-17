@@ -118,8 +118,6 @@ def train_model(dset, **kwargs):
     device = 'cuda:0' if cuda.is_available() else 'cpu'
     if dset == 'MNIST':
         dataset = Dataset(MNIST(device), MNISTModel(), device)
-    elif dset == 'MNIST_AE':
-        dataset = Dataset(MNIST(device), AE(), device)
     else:
         raise ModuleNotFoundError(f"Unsupported dataset {d}")
 
