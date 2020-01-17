@@ -126,7 +126,7 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
 
     return ae
 
-def save_img(img, name="output.png"):
+def save_img(img, name="output"):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save tensor
     save(img, name+'.pt')

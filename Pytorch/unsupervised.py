@@ -1,4 +1,4 @@
-from setup_mnist import *
+from setup_mnist import MNIST
 from utils import AE
 
 from torch.optim import SGD, Adam, Adadelta, Adagrad

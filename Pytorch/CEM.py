@@ -36,11 +36,6 @@ class CEM:
             - gamma              : regularization weight for autoencoder loss
                                    function
         """
-
-        # Initialize the shape for the variables used for pertinent analysis.
-        shape = (batch_size, \
-                 model.image_size, model.image_size,  model.num_channels)
-
         # Define model variables
         self.model = model
         self.mode = mode
@@ -54,23 +49,18 @@ class CEM:
         self.beta = beta
         self.gamma = gamma
 
-        # Initialize optimizer.
-        #self.adv_img = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-        #self.adv_img_slack = torch.zeros((shape), dtype=torch.float32, requires_grad=True)
-
-
     def attack(self, imgs, labs):
+        """Perform attack on imgs."""
         dvc = imgs.device
 
         def compare(x, y):
+            """Compare x with y."""
+            # Convert x to single number
             if not isinstance(x, (float, int, np.int64)):
                 x = x.clone()
-                # x[y] -= self.kappa if self.PP else -self.kappa
-                if self.mode == "PP":
-                    x[y] -= self.kappa
-                elif self.mode == "PN":
-                    x[y] += self.kappa
+                x[y] -= self.kappa if (self.mode == "PP") else -self.kappa
                 x = torch.argmax(x)
+
             if self.mode == "PP":
                 return x==y
             elif self.mode == "PN":
@@ -116,35 +106,6 @@ class CEM:
                     adv_img, adv_img_slack_update = fista.fista(self.mode, self.beta, iteration, adv_img, adv_img_slack, orig_img)
 
                 adv_img_slack.data = adv_img_slack_update.data
-
-                '''
-
-                z = self.adv_img_slack - orig_img
-                adv_img_update = (z > self.beta) * torch.min((self.adv_img_slack - self.beta), torch.tensor(0.5)) + \
-                               (torch.abs(z) <= self.beta) * orig_img + \
-                               (z < -self.beta) * torch.max((self.adv_img_slack + self.beta), torch.tensor(-0.5))
-
-                z_delta = adv_img_update - orig_img
-
-                if self.mode == "PP":
-                    adv_img_update = (z_delta <= 0) * adv_img_update + (z_delta > 0) * orig_img
-                elif self.mode == "PN":
-                    adv_img_update = (z_delta > 0) * adv_img_update + (z_delta <= 0) * orig_img
-
-                # Slack update.
-                zt = iteration / (iteration + torch.tensor(3))
-                adv_img_slack_update = adv_img_update + zt * (adv_img_update - self.adv_img)
-                z_slack = adv_img_slack_update - orig_img
-
-                if self.mode == "PP":
-                    adv_img_slack_update = (z_slack <= 0) * adv_img_slack_update + (z_slack > 0) * orig_img
-                elif self.mode == "PN":
-                    adv_img_slack_update = (z_slack > 0) * adv_img_slack_update + (z_slack <= 0) * orig_img
-
-                self.adv_img = adv_img_update
-                self.adv_img_slack = adv_img_slack_update
-
-                '''
 
                 if iteration%(self.max_iterations//10) == 0:
                     print(f"iter: {iteration} const: {c_start.item()}")

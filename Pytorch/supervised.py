@@ -1,9 +1,6 @@
 ## (C) 2020 UvA FACT AI group
 
-
 from setup_mnist import *
-from utils import AE
-
 from torch.optim import SGD, Adam, Adadelta, Adagrad
 from torch.nn import CrossEntropyLoss
 from torch import mean as torch_mean
