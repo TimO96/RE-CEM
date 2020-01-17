@@ -20,7 +20,7 @@ def find(name, item):
 f = h5py.File(weight_file, 'r')
 f.visititems(find)
 
-def h5_to_state_dict(h5_file, mapping, m2):
+def h5_to_state_dict(h5_file, mapping):
     """Create Pytorch state_dict from h5 weight with mapping."""
     state_dict = {}
     with h5py.File(h5_file, 'r') as f:
@@ -37,18 +37,6 @@ def h5_to_state_dict(h5_file, mapping, m2):
             else:
                 state_dict[state] = from_numpy(data)
 
-        for h5, state in m2.items():
-            data = f[h5][:]
-            if len(data.shape) > 3:
-                d = data.transpose((3,2,0,1))
-                print(d.shape)
-                state_dict[state] += from_numpy(d)
-            elif len(data.shape) > 1:
-                d = data.transpose((1,0))
-                print(d.shape)
-                state_dict[state] += from_numpy(d)
-            else:
-                state_dict[state] += from_numpy(data)
     return state_dict
 
 # AE mapping
@@ -89,7 +77,7 @@ cnn_map = {
 cnn = MNISTModel(h5_to_state_dict(weight_file, cnn_map))
 summary(cnn, (cnn.image_size, cnn.image_size, cnn.num_channels), device="cpu")
 
-mnist = MNIST()
+mnist = MNIST(device="cpu")
 
 plt.imshow(np.squeeze(mnist.test_data[4]))
 #plt.show()
