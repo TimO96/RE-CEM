@@ -14,7 +14,7 @@ class Dataset:
     def __init__(self, data, model, device='cuda:0', random=123):
         """Initialize a dataset."""
         self.data  = data
-        self.name  = data.__class__.__name__
+        self.name  = data.__class__.__name__ + "_" + model.__class__.__name__
         self.model = model.to(device)
         self.device = device
 

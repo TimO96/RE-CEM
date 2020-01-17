@@ -126,3 +126,8 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     # search(args['dataset'])
     train_model(args['dataset'], stats=0)
+
+    ae = AE()
+    ae.load_state_dict("MNIST_AE.pt")
+
+    
