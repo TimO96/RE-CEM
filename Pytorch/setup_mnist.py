@@ -22,15 +22,10 @@ import sys
 from torchsummary import summary
 
 class MNIST:
-    def __init__(self, device='cuda', force=False):
+    def __init__(self, device='cpu', force=False):
         """Load MNIST dataset, optionally force to download and overwrite."""
-        self.n_train = 60000
-        self.n_test  = 10000
-        self.n_valid = 5000
-
-        self.force = force
-
         # Make storage room
+        self.force = force
         self.dir = "data"
         if not os.path.exists(self.dir):
             os.mkdir(self.dir)
@@ -38,24 +33,20 @@ class MNIST:
 
         # Get files locally
         self.mnist_url = "http://yann.lecun.com/exdb/mnist/"
-        self.train_x_path = self.fetch("train-images-idx3-ubyte.gz")
-        self.train_r_path = self.fetch("train-labels-idx1-ubyte.gz")
-        self.test_x_path = self.fetch("t10k-images-idx3-ubyte.gz")
-        self.test_r_path = self.fetch("t10k-labels-idx1-ubyte.gz")
+        n_train = 60000
+        n_test  = 10000
+        train_x_path = self.fetch("train-images-idx3-ubyte.gz")
+        train_r_path = self.fetch("train-labels-idx1-ubyte.gz")
+        test_x_path = self.fetch("t10k-images-idx3-ubyte.gz")
+        test_r_path = self.fetch("t10k-labels-idx1-ubyte.gz")
 
         # Get Test data
-        self.test_data = MNIST.extract_data(self.test_x_path, self.n_test).to(device)
-        self.test_labels = MNIST.extract_labels(self.test_r_path, self.n_test).to(device)
+        self.test_data = MNIST.extract_data(test_x_path, n_test).to(device)
+        self.test_labels = MNIST.extract_labels(test_r_path, n_test).to(device)
 
         # Get Train data
-        train_data = MNIST.extract_data(self.train_x_path, self.n_train)
-        train_labels = MNIST.extract_labels(self.train_r_path, self.n_train)
-        self.train_data = train_data[self.n_valid:, :, :, :].to(device)
-        self.train_labels = train_labels[self.n_valid:].to(device)
-
-        # Get Validation data from training data
-        self.validation_data = train_data[:self.n_valid, :, :, :].to(device)
-        self.validation_labels = train_labels[:self.n_valid].to(device)
+        self.train_data = MNIST.extract_data(train_x_path, n_train).to(device)
+        self.train_labels = MNIST.extract_labels(train_r_path, n_train).to(device)
 
     def fetch(self, file):
         """Get file from self.url if not already present locally."""

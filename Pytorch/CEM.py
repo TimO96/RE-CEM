@@ -60,6 +60,7 @@ class CEM:
 
 
     def attack(self, imgs, labs):
+        dvc = imgs.device
 
         def compare(x, y):
             if not isinstance(x, (float, int, np.int64)):
@@ -78,9 +79,9 @@ class CEM:
         batch_size = self.batch_size
 
         # set the lower and upper bounds accordingly
-        lower_bound = torch.zeros(batch_size)
-        c_start = torch.ones(batch_size) * self.c_init
-        upper_bound = torch.ones(batch_size) * 1e10
+        lower_bound = torch.zeros(batch_size).to(dvc)
+        c_start = torch.ones(batch_size).to(dvc) * self.c_init
+        upper_bound = torch.ones(batch_size).to(dvc) * 1e10
         # the best l2, score, and image attack
         overall_best_dist = [1e10] * batch_size
         overall_best_attack = [np.zeros(imgs[0].shape)] * batch_size
@@ -152,16 +153,16 @@ class CEM:
                     sys.stdout.flush()
 
                 for batch_idx,(dist, score, the_adv_img) in enumerate(zip(loss_EN, pred, self.adv_img)):
-                    if dist < current_step_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx])):
+                    if dist < current_step_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx], -1)):
                         current_step_best_dist[batch_idx] = dist
-                        current_step_best_score[batch_idx] = torch.argmax(score)
-                    if dist < overall_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx])):
+                        current_step_best_score[batch_idx] = torch.argmax(score, -1)
+                    if dist < overall_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx], -1)):
                         overall_best_dist[batch_idx] = dist
                         overall_best_attack[batch_idx] = the_adv_img
 
             # adjust the constant as needed
             for batch_idx in range(batch_size):
-                if compare(current_step_best_score[batch_idx], torch.argmax(label_batch[batch_idx])) and current_step_best_score[batch_idx] != -1:
+                if compare(current_step_best_score[batch_idx], torch.argmax(label_batch[batch_idx], -1)) and current_step_best_score[batch_idx] != -1:
                     # success, divide const by two
                     upper_bound[batch_idx] = min(upper_bound[batch_idx], c_start[batch_idx])
                     if upper_bound[batch_idx] < 1e9:

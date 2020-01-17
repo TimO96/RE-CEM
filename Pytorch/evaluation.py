@@ -90,7 +90,7 @@ def loss_function(model, mode, orig_img, delta, target_lab, kappa):
     # the best class from the other classes is predicted.
     max_nontarget_lab_score = torch.max(pred[(1-target_lab).bool()])
 
-    zero = torch.tensor([0.])
+    zero = torch.tensor([0.], device=pred.device)
     if mode == "PP":
         loss_attack = torch.max(zero, max_nontarget_lab_score - \
                                 target_lab_score + kappa)

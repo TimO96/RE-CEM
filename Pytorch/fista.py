@@ -3,6 +3,7 @@
 ## (C) 2020 UvA FACT AI group
 
 import torch
+from torch import tensor
 
 def fista(label, beta, step, delta, slack, orig_img):
     """
@@ -20,9 +21,10 @@ def fista(label, beta, step, delta, slack, orig_img):
     """
     # Delta Update.
     z = slack - orig_img
-    delta_update = (z > beta) * torch.min((slack - beta), torch.tensor(0.5)) + \
+    HALF = tensor(0.5).to(z.device)
+    delta_update = (z > beta) * torch.min((slack - beta), HALF) + \
                    (torch.abs(z) <= beta) * orig_img + \
-                   (z < -beta) * torch.max((slack + beta), torch.tensor(-0.5))
+                   (z < -beta) * torch.max((slack + beta), -HALF)
     delta_update = update(delta_update, orig_img, label)
 
     # Slack update.
@@ -35,6 +37,7 @@ def fista(label, beta, step, delta, slack, orig_img):
 def update(variable, orig_img, label):
     """Update a variable based on label and its difference with orig_img."""
     z = variable - orig_img
+    # print(z.device, variable.device, orig_img.device)
     if label == "PP":
         return (z <= 0) * variable + (z > 0) * orig_img
     elif label == "PN":
