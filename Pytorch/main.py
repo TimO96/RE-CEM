@@ -30,8 +30,8 @@ from torch import cuda
 import utils as util
 from CEM import CEM
 
-def main(image_id, arg_max_iter=10000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=10, beta=1e-1, gamma=100, dir='results', seed=121):
+def main(image_id, arg_max_iter=100, c_steps=9, init_const=10.0, mode="PN",
+         kappa=10, beta=1e-1, gamma=0, dir='results', seed=121):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
     random.seed(seed)
     np.random.seed(seed)
@@ -74,11 +74,14 @@ def main(image_id, arg_max_iter=10000, c_steps=9, init_const=10.0, mode="PN",
     #Save image to Results
     suffix = f"id{image_id}_kappa{kappa}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
     save_dir = f"{dir}/{mode}_ID{image_id}_Gamma_{gamma}"
-    os.system(f"mkdir -p {dir}/{save_dir}")
+    # dir = ""
+    os.system(f"mkdir -p {save_dir}")
+    # if not os.path.exists(self.dir):
+        # os.mkdir(self.dir)
     util.save_img(orig_img, f"{save_dir}/Orig_original{orig_class}")
     util.save_img(adv_img, f"{save_dir}/Adv_{suffix}")
     util.save_img(torch.abs(orig_img-adv_img)-0.5, f"{save_dir}/Delta_{suffix}")
 
     sys.stdout.flush()
 
-main(image_id=2950)
+main(image_id=2950, mode="PP")

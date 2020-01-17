@@ -84,7 +84,7 @@ class CEM:
         upper_bound = torch.ones(batch_size).to(dvc) * 1e10
         # the best l2, score, and image attack
         overall_best_dist = [1e10] * batch_size
-        overall_best_attack = [np.zeros(imgs[0].shape)] * batch_size
+        overall_best_attack = [torch.zeros(imgs[0].shape).to(dvc)] * batch_size
 
         for c_steps_idx in range(self.c_steps):
             # completely reset adam's internal state.
@@ -100,7 +100,7 @@ class CEM:
             adv_img = img_batch
             adv_img_slack = Variable(img_batch, requires_grad=True)
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr = self.lr_init)
-            utils.save_image(orig_img.squeeze(), 'original_image.png')
+            # utils.save_image(orig_img.squeeze(), 'original_image.png')
 
             for iteration in range(self.max_iterations):
                 # perform the attack
@@ -149,8 +149,8 @@ class CEM:
                 if iteration%(self.max_iterations//10) == 0:
                     print(f"iter: {iteration} const: {c_start.item()}")
                     print("Loss_Overall:{:.4f}". format(loss_no_opt))
-                    loc = str(c_steps_idx) + '-' + str(iteration) + '-img.png'
-                    utils.save_image(adv_img.detach().squeeze(), loc)
+                    # loc = str(c_steps_idx) + '-' + str(iteration) + '-img.png'
+                    # utils.save_image(adv_img.detach().squeeze(), loc)
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
                     #print("")
@@ -166,7 +166,7 @@ class CEM:
 
             # adjust the constant as needed
             for batch_idx in range(batch_size):
-                if compare(current_step_best_score[batch_idx].item(), torch.argmax(label_batch[batch_idx]).item()) and current_step_best_score[batch_idx].item() != -1:
+                if compare(current_step_best_score[batch_idx], torch.argmax(label_batch[batch_idx])) and current_step_best_score[batch_idx] != -1:
                     # success, divide const by two
                     upper_bound[batch_idx] = min(upper_bound[batch_idx], c_start[batch_idx])
                     if upper_bound[batch_idx] < 1e9:
@@ -182,4 +182,3 @@ class CEM:
 
         # return the best solution found
         return overall_best_attack[0].unsqueeze(0)
-        # return overall_best_attack.reshape((1,) + overall_best_attack.shape)
