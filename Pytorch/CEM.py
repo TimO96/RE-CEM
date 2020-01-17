@@ -85,22 +85,22 @@ class CEM:
         # the best l2, score, and image attack
         overall_best_dist = [1e10] * batch_size
         overall_best_attack = [torch.zeros(imgs[0].shape).to(dvc)] * batch_size
+        img_batch = imgs[:batch_size]
+        label_batch = labs[:batch_size]
+        target_lab = label_batch
+        orig_img = img_batch.clone()
 
         for c_steps_idx in range(self.c_steps):
             # completely reset adam's internal state.
-            img_batch = imgs[:batch_size]
-            label_batch = labs[:batch_size]
 
             current_step_best_dist = [1e10] * batch_size
             current_step_best_score = [-1] * batch_size
 
             # set the variables so that we don't have to send them over again
-            orig_img = img_batch
-            target_lab = label_batch
-            adv_img = img_batch
-            adv_img_slack = Variable(img_batch, requires_grad=True)
+            adv_img = img_batch.clone()
+            adv_img_slack = Variable(img_batch.clone(), requires_grad=True)
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr = self.lr_init)
-            # utils.save_image(orig_img.squeeze(), 'original_image.png')
+            utils.save_image(orig_img.squeeze(), 'original_image.png')
 
             for iteration in range(self.max_iterations):
                 # perform the attack
@@ -147,10 +147,9 @@ class CEM:
                 '''
 
                 if iteration%(self.max_iterations//10) == 0:
-                    print(f"iter: {iteration} const: {c_start.item()}")
+                    print("iter:{} const:{}". format(iteration, c_start))
                     print("Loss_Overall:{:.4f}". format(loss_no_opt))
-                    # loc = str(c_steps_idx) + '-' + str(iteration) + '-img.png'
-                    # utils.save_image(adv_img.detach().squeeze(), loc)
+                    utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
                     #print("")
@@ -181,4 +180,6 @@ class CEM:
                         c_start[batch_idx] *= 10
 
         # return the best solution found
+        print(overall_best_attack[0])
         return overall_best_attack[0].unsqueeze(0)
+        # return overall_best_attack.reshape((1,) + overall_best_attack.shape)
