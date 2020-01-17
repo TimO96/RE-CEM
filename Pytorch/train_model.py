@@ -103,12 +103,12 @@ class Dataset:
 
 def search(dset):
     """Sort of grid search."""
-    opts = [Adam, Adagrad, SGD]
+    opts = [Adam, Adagrad]
     for opt in opts:
-        for lr in [0.1, 0.01, 0.001, 0.0001]:
-            for b in [32, 64]:
+        for lr in [0.01, 0.001]:
+            for b in [64, 128]:
                 print(opt, lr, b)
-                train_model(dset, batch=b, epochs=10, optim=opt, optim_params={'lr':lr})
+                train_model(dset, batch=b, epochs=50, optim=opt, optim_params={'lr':lr})
 
 def train_model(dset, **kwargs):
     """Train a specific dataset."""
