@@ -29,30 +29,58 @@ results should be in separated`
 
 # Questions 17/01
  - Skribbl.io?
- - Trying to get .996:
-```
-<class 'torch.optim.adam.Adam'> 0.01
-Train: 0.97 test: 0.974 valid: 0.973
-<class 'torch.optim.adam.Adam'> 0.001
-Train: 0.99 test: 0.986 valid: 0.983
-<class 'torch.optim.adam.Adam'> 0.0001
-Train: 0.98 test: 0.978 valid: 0.978
-<class 'torch.optim.sgd.SGD'> 0.01
-Train: 0.78 test: 0.789 valid: 0.788
-<class 'torch.optim.sgd.SGD'> 0.001
-Train: 0.1 test: 0.101 valid: 0.099
-<class 'torch.optim.sgd.SGD'> 0.0001
-Train: 0.11 test: 0.112 valid: 0.108
-<class 'torch.optim.adadelta.Adadelta'> 0.01
-Train: 0.64 test: 0.649 valid: 0.646
-<class 'torch.optim.adadelta.Adadelta'> 0.001
-Train: 0.1 test: 0.101 valid: 0.099
-<class 'torch.optim.adadelta.Adadelta'> 0.0001
-Train: 0.12 test: 0.12 valid: 0.123
-<class 'torch.optim.adagrad.Adagrad'> 0.01
-Train: 0.99 test: 0.991 valid: 0.99
-<class 'torch.optim.adagrad.Adagrad'> 0.001
-Train: 0.95 test: 0.957 valid: 0.96
-<class 'torch.optim.adagrad.Adagrad'> 0.0001
-```
-
+ - Trying to get .996 (batch size 64):
+    - 55000 training examples
+        ```
+        <class 'torch.optim.adam.Adam'> 0.01
+        Train: 0.97 test: 0.974 valid: 0.973
+        <class 'torch.optim.adam.Adam'> 0.001
+        Train: 0.99 test: 0.986 valid: 0.983
+        <class 'torch.optim.adam.Adam'> 0.0001
+        Train: 0.98 test: 0.978 valid: 0.978
+        <class 'torch.optim.sgd.SGD'> 0.01
+        Train: 0.78 test: 0.789 valid: 0.788
+        <class 'torch.optim.sgd.SGD'> 0.001
+        Train: 0.1 test: 0.101 valid: 0.099
+        <class 'torch.optim.sgd.SGD'> 0.0001
+        Train: 0.11 test: 0.112 valid: 0.108
+        <class 'torch.optim.adadelta.Adadelta'> 0.01
+        Train: 0.64 test: 0.649 valid: 0.646
+        <class 'torch.optim.adadelta.Adadelta'> 0.001
+        Train: 0.1 test: 0.101 valid: 0.099
+        <class 'torch.optim.adadelta.Adadelta'> 0.0001
+        Train: 0.12 test: 0.12 valid: 0.123
+        <class 'torch.optim.adagrad.Adagrad'> 0.01
+        Train: 0.99 test: 0.991 valid: 0.99
+        <class 'torch.optim.adagrad.Adagrad'> 0.001
+        Train: 0.95 test: 0.957 valid: 0.96
+        <class 'torch.optim.adagrad.Adagrad'> 0.0001
+        Train: 0.83 test: 0.84 valid: 0.831
+        ```
+    - 60000 training examples
+        ```
+        <class 'torch.optim.adam.Adam'> 0.01
+        Train: 0.97 test: 0.976 valid: -1
+        <class 'torch.optim.adam.Adam'> 0.001
+        Train: 0.99 test: 0.989 valid: -1
+        <class 'torch.optim.adam.Adam'> 0.0001
+        Train: 0.98 test: 0.98 valid: -1
+        <class 'torch.optim.sgd.SGD'> 0.01
+        Train: 0.85 test: 0.862 valid: -1
+        <class 'torch.optim.sgd.SGD'> 0.001
+        Train: 0.1 test: 0.101 valid: -1
+        <class 'torch.optim.sgd.SGD'> 0.0001
+        Train: 0.11 test: 0.11 valid: -1
+        <class 'torch.optim.adadelta.Adadelta'> 0.01
+        Train: 0.81 test: 0.823 valid: -1
+        <class 'torch.optim.adadelta.Adadelta'> 0.001
+        Train: 0.1 test: 0.101 valid: -1
+        <class 'torch.optim.adadelta.Adadelta'> 0.0001
+        Train: 0.12 test: 0.121 valid: -1
+        <class 'torch.optim.adagrad.Adagrad'> 0.01
+        Train: 0.99 test: 0.989 valid: -1
+        <class 'torch.optim.adagrad.Adagrad'> 0.001
+        Train: 0.96 test: 0.963 valid: -1
+        <class 'torch.optim.adagrad.Adagrad'> 0.0001
+        Train: 0.83 test: 0.844 valid: -1
+        ```
