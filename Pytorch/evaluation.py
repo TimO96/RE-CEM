@@ -52,6 +52,7 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
         loss_AE_dist = gamma * (torch.norm(AE(delta + orig_img) - delta + \
                                 orig_img)**2)
 
+    print(loss_attack.item())
     # Determine whether the L1 loss term should be added when FISTA is not
     # optimized.
     if to_optimize:

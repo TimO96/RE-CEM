@@ -53,18 +53,18 @@ class CEM:
         """Perform attack on imgs."""
         dvc = imgs.device
 
-        def compare(x, y):
-            """Compare x with y."""
-            # Convert x to single number
-            if not isinstance(x, (float, int, np.int64)):
-                x = x.clone()
-                x[y] -= self.kappa if (self.mode == "PP") else -self.kappa
-                x = torch.argmax(x)
+        def compare(score, target):
+            """Compare score with target."""
+            # Convert score to single number
+            if not isinstance(score, (float, int)):
+                score = score.clone()
+                score[target] -= self.kappa if (self.mode == "PP") else -self.kappa
+                score = torch.argmax(score)
 
             if self.mode == "PP":
-                return x==y
+                return score==target
             elif self.mode == "PN":
-                return x!=y
+                return score!=target
 
         batch_size = self.batch_size
 
@@ -90,15 +90,15 @@ class CEM:
             adv_img = img_batch.clone()
             adv_img_slack = Variable(img_batch.clone(), requires_grad=True)
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr = self.lr_init)
-            utils.save_image(orig_img.squeeze(), 'original_image.png')
+            # utils.save_image(orig_img.squeeze(), 'original_image.png')
 
             for iteration in range(self.max_iterations):
                 # perform the attack
                 #self.adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, self.adv_img, self.adv_img_slack, orig_img)
                 optimizer.zero_grad()
-                optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
-                loss_no_opt, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
-                loss, _, _ = evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
+                # optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
+                loss_no_opt, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, adv_img,       target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
+                loss, _, _ =                 evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
                 loss.backward()
                 optimizer.step()
 
@@ -108,19 +108,24 @@ class CEM:
                 adv_img_slack.data = adv_img_slack_update.data
 
                 if iteration%(self.max_iterations//10) == 0:
-                    print("iter:{} const:{}". format(iteration, c_start))
+                    print(f"iter: {iteration} const: {c_start.item()}")
                     print("Loss_Overall:{:.4f}". format(loss_no_opt))
-                    utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
+                    # utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
                     #print("")
                     sys.stdout.flush()
 
                 for batch_idx,(dist, score, the_adv_img) in enumerate(zip(loss_EN, pred, adv_img)):
-                    if dist < current_step_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx])):
+                    comp = compare(score, torch.argmax(label_batch[batch_idx]))
+
+                    #
+                    if dist < current_step_best_dist[batch_idx] and comp:
                         current_step_best_dist[batch_idx] = dist
                         current_step_best_score[batch_idx] = torch.argmax(score).item()
-                    if dist < overall_best_dist[batch_idx] and compare(score, torch.argmax(label_batch[batch_idx])):
+
+                    #
+                    if dist < overall_best_dist[batch_idx] and comp:
                         overall_best_dist[batch_idx] = dist
                         overall_best_attack[batch_idx] = the_adv_img
 
@@ -143,4 +148,3 @@ class CEM:
         # return the best solution found
         print(overall_best_attack[0])
         return overall_best_attack[0].unsqueeze(0)
-        # return overall_best_attack.reshape((1,) + overall_best_attack.shape)
