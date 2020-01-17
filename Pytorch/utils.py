@@ -133,7 +133,7 @@ def save_img(img, name="output", save_tensor=True):
         save(img, name+'.pt')
 
     # Save image, invert MNIST read
-    fig = np.around((img.detach().numpy() + 0.5) * 255)
+    fig = np.around((img.cpu().data.numpy() + 0.5) * 255)
     fig = fig.astype(np.uint8).squeeze()
     pic = Image.fromarray(fig)
     pic.save(name+'.png')

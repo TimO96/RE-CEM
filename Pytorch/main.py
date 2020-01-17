@@ -33,12 +33,12 @@ from CEM import CEM
 def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
          kappa=10, beta=1e-1, gamma=0, dir='results', seed=121):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
-    random.seed(seed)
-    np.random.seed(seed)
+    # random.seed(seed)
+    # np.random.seed(seed)
 
     #Load autoencoder and MNIST dataset.
     AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-    data, model =  MNIST(dvc), MNISTModel(torch.load('models/MNIST.pt')).to(dvc)
+    data, model =  MNIST(dvc), MNISTModel(torch.load('models/MNIST_MNISTModel.pt')).to(dvc)
 
     # Get model prediction for image_id.
     image = data.test_data[image_id].unsqueeze(0)
@@ -81,4 +81,4 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     sys.stdout.flush()
 
-main(image_id=2950, mode="PP")
+main(image_id=2950, mode="PN")

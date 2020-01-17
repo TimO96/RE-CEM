@@ -25,6 +25,8 @@ def fista(label, beta, step, delta, slack, orig_img):
     delta_update = (z > beta) * torch.min((slack - beta), HALF) + \
                    (torch.abs(z) <= beta) * orig_img + \
                    (z < -beta) * torch.max((slack + beta), -HALF)
+
+    print(False in (delta_update.view(28*28) == orig_img.view(28*28)))
     delta_update = update(delta_update, orig_img, label)
 
     # Slack update.
@@ -34,13 +36,13 @@ def fista(label, beta, step, delta, slack, orig_img):
 
     return delta_update, slack_update
 
-def update(variable, orig_img, label):
+def update(variable, orig_img, mode):
     """Update a variable based on label and its difference with orig_img."""
     z = variable - orig_img
     # print(z.device, variable.device, orig_img.device)
-    if label == "PP":
+    if mode == "PP":
         return (z <= 0) * variable + (z > 0) * orig_img
-    elif label == "PN":
+    elif mode == "PN":
         return (z > 0) * variable + (z <= 0) * orig_img
 
     # When label is unknown.

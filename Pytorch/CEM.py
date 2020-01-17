@@ -89,8 +89,13 @@ class CEM:
             # set the variables so that we don't have to send them over again
             adv_img = img_batch.clone()
             adv_img_slack = Variable(img_batch.clone(), requires_grad=True)
+
+            # print(adv_img_slack)
+
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr = self.lr_init)
             # utils.save_image(orig_img.squeeze(), 'original_image.png')
+            # print(optimizer.state_dict())
+            # print(optimizer.param_groups)
 
             for iteration in range(self.max_iterations):
                 # perform the attack
@@ -99,13 +104,32 @@ class CEM:
                 # optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
                 loss_no_opt, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, adv_img,       target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
                 loss, _, _ =                 evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
+
+
+                print(loss)
+                # print(optimizer.state_dict())
+                # print(adv_img_slack)
+                # q = adv_img_slack.clone()
+
                 loss.backward()
                 optimizer.step()
+
+                # print(q == adv_img_slack)
+
+
+                opg = optimizer.param_groups
+                adv_img_slack = opg[0]['params'][0]
 
                 with torch.no_grad():
                     adv_img, adv_img_slack_update = fista.fista(self.mode, self.beta, iteration, adv_img, adv_img_slack, orig_img)
 
-                adv_img_slack.data = adv_img_slack_update.data
+                # adv_img_slack.data = adv_img_slack_update.data
+                opg[0]['params'][0] = adv_img_slack_update
+
+                optimizer.param_groups = opg
+                # print(optimizer.state_dict())
+
+                # optimizer.load_state_dict(osd)
 
                 if iteration%(self.max_iterations//10) == 0:
                     print(f"iter: {iteration} const: {c_start.item()}")
