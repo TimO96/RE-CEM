@@ -12,6 +12,7 @@ import evaluation
 from polynomial_decay import poly_lr_scheduler
 from torchvision import utils
 from torch.autograd import Variable
+from torch import nn
 
 
 class CEM:
@@ -77,8 +78,6 @@ class CEM:
         overall_best_attack = [torch.zeros(imgs[0].shape).to(dvc)] * batch_size
         img_batch = imgs[:batch_size]
         label_batch = labs[:batch_size]
-        target_lab = label_batch
-        orig_img = img_batch.clone()
 
         for c_steps_idx in range(self.c_steps):
             # completely reset adam's internal state.
@@ -87,54 +86,35 @@ class CEM:
             current_step_best_score = [-1] * batch_size
 
             # set the variables so that we don't have to send them over again
+            orig_img = img_batch.clone()
+            target_lab = label_batch
             adv_img = img_batch.clone()
-            adv_img_slack = Variable(img_batch.clone(), requires_grad=True)
-
-            # print(adv_img_slack)
+            adv_img_slack = img_batch.clone().requires_grad_(True)
 
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr = self.lr_init)
-            # utils.save_image(orig_img.squeeze(), 'original_image.png')
-            # print(optimizer.state_dict())
-            # print(optimizer.param_groups)
+            utils.save_image(orig_img.squeeze(), 'original_image.png')
 
             for iteration in range(self.max_iterations):
                 # perform the attack
-                #self.adv_img, self.adv_img_slack = fista.fista(self.mode, self.beta, iteration, self.adv_img, self.adv_img_slack, orig_img)
                 optimizer.zero_grad()
-                # optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
-                loss_no_opt, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, adv_img,       target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
-                loss, _, _ =                 evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
-
-
-                print(loss)
-                # print(optimizer.state_dict())
-                # print(adv_img_slack)
-                # q = adv_img_slack.clone()
+                optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
+                loss_no_opt, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
+                loss, _, _ = evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
 
                 loss.backward()
                 optimizer.step()
-
-                # print(q == adv_img_slack)
-
-
-                opg = optimizer.param_groups
-                adv_img_slack = opg[0]['params'][0]
 
                 with torch.no_grad():
                     adv_img, adv_img_slack_update = fista.fista(self.mode, self.beta, iteration, adv_img, adv_img_slack, orig_img)
 
                 # adv_img_slack.data = adv_img_slack_update.data
-                opg[0]['params'][0] = adv_img_slack_update
+                adv_img_slack.data = adv_img_slack_update.data
 
-                optimizer.param_groups = opg
-                # print(optimizer.state_dict())
-
-                # optimizer.load_state_dict(osd)
 
                 if iteration%(self.max_iterations//10) == 0:
                     print(f"iter: {iteration} const: {c_start.item()}")
                     print("Loss_Overall:{:.4f}". format(loss_no_opt))
-                    # utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
+                    utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
                     #print("")
@@ -170,5 +150,4 @@ class CEM:
                         c_start[batch_idx] *= 10
 
         # return the best solution found
-        print(overall_best_attack[0])
         return overall_best_attack[0].unsqueeze(0)
