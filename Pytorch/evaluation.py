@@ -28,7 +28,7 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
           class given the pertubation (delta)
     """
 
-    delta = adv - orig_img
+    delta = orig_img - adv
 
     # Distance to the input data.
     L2_dist = torch.sum(delta**2, (1,2,3))
@@ -36,7 +36,7 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
     elastic_dist = L2_dist + L1_dist * beta
 
     # Calculate the total loss for the adversarial attack.
-    loss_attack, pred = loss_function(model, mode, orig_img, delta, target_lab, kappa)
+    loss_attack, pred = loss_function(model, mode, adv, delta, target_lab, kappa)
 
     # Sum up the losses.
     loss_L1_dist = torch.sum(L1_dist)
@@ -52,7 +52,6 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
         loss_AE_dist = gamma * (torch.norm(AE(delta + orig_img) - delta + \
                                 orig_img)**2)
 
-    print(loss_attack.item())
     # Determine whether the L1 loss term should be added when FISTA is not
     # optimized.
     if to_optimize:
@@ -60,9 +59,9 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
     else:
         loss = loss_attack + loss_L2_dist + loss_AE_dist + loss_L1_dist * beta
 
-    return loss, elastic_dist, pred
+    return loss, elastic_dist, pred, loss_attack, loss_L2_dist, loss_L1_dist
 
-def loss_function(model, mode, orig_img, delta, target_lab, kappa):
+def loss_function(model, mode, adv, delta, target_lab, kappa):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PN) or pertinent negatives (PN).
@@ -83,7 +82,7 @@ def loss_function(model, mode, orig_img, delta, target_lab, kappa):
     if mode == "PP":
         pred = model.predict(delta)
     elif mode == "PN":
-        pred = model.predict(orig_img + delta)
+        pred = model.predict(adv)
 
     # Compute the probability of the label class versus the maximum others.
     target_lab_score = torch.sum((target_lab) * pred, dim=1)

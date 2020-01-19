@@ -98,8 +98,7 @@ class CEM:
                 # perform the attack
                 optimizer.zero_grad()
                 optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
-                loss_no_opt, loss_EN, pred = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
-                loss, _, _ = evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
+                loss, _, _, _, _, _ = evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
 
                 loss.backward()
                 optimizer.step()
@@ -110,14 +109,17 @@ class CEM:
                 # adv_img_slack.data = adv_img_slack_update.data
                 adv_img_slack.data = adv_img_slack_update.data
 
+                loss_no_opt, loss_EN, pred, loss_attack, loss_L2_dist, loss_L1_dist = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
+
 
                 if iteration%(self.max_iterations//10) == 0:
                     print(f"iter: {iteration} const: {c_start.item()}")
-                    print("Loss_Overall:{:.4f}". format(loss_no_opt))
-                    utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
+                    print("Loss_Overall:{:.4f}, Loss_Elastic:{:.4f}". format(loss_no_opt, loss_EN.item()))
+                    print("Loss_attack:{:.4f}, Loss_L2:{:.4f}, Loss_L1:{:.4f}". format(loss_attack, loss_L2_dist, loss_L1_dist))
+                    #utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
-                    #print("")
+                    print("")
                     sys.stdout.flush()
 
                 for batch_idx,(dist, score, the_adv_img) in enumerate(zip(loss_EN, pred, adv_img)):

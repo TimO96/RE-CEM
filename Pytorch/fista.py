@@ -26,7 +26,6 @@ def fista(label, beta, step, delta, slack, orig_img):
                    (torch.abs(z) <= beta) * orig_img + \
                    (z < -beta) * torch.max((slack + beta), -HALF)
 
-    print(False in (delta_update.view(28*28) == orig_img.view(28*28)))
     delta_update = update(delta_update, orig_img, label)
 
     # Slack update.
