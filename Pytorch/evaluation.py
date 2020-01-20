@@ -36,7 +36,7 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
     elastic_dist = L2_dist + L1_dist * beta
 
     # Calculate the total loss for the adversarial attack.
-    loss_attack, pred = loss_function(model, mode, adv, delta, target_lab, kappa)
+    loss_attack, pred, target_score, nontarget_score = loss_function(model, mode, adv, delta, target_lab, kappa)
 
     # Sum up the losses.
     loss_L1_dist = torch.sum(L1_dist)
@@ -59,7 +59,7 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
     else:
         loss = loss_attack + loss_L2_dist + loss_AE_dist + loss_L1_dist * beta
 
-    return loss, elastic_dist, pred, loss_attack, loss_L2_dist, loss_L1_dist
+    return loss, elastic_dist, pred, loss_attack, loss_L2_dist, loss_L1_dist, target_score, nontarget_score
 
 def loss_function(model, mode, adv, delta, target_lab, kappa):
     """
@@ -84,11 +84,13 @@ def loss_function(model, mode, adv, delta, target_lab, kappa):
     elif mode == "PN":
         pred = model.predict(adv)
 
+    print(pred)
+
     # Compute the probability of the label class versus the maximum others.
-    target_lab_score = torch.sum((target_lab) * pred, dim=1)
+    target_lab_score = torch.sum((target_lab) * pred)
     # Inflate the real label in one-hot vector target_lab to infinity such that
     # the best class from the other classes is predicted.
-    max_nontarget_lab_score = torch.max(pred[(1-target_lab).bool()])
+    max_nontarget_lab_score = torch.max((torch.ones(10)-target_lab) * pred - target_lab*10000)
 
     zero = torch.tensor([0.], device=pred.device)
     if mode == "PP":
@@ -100,4 +102,4 @@ def loss_function(model, mode, adv, delta, target_lab, kappa):
         loss_attack = torch.max(zero, -max_nontarget_lab_score + \
                                 target_lab_score + kappa)
 
-    return loss_attack, pred
+    return loss_attack, pred, target_lab_score, max_nontarget_lab_score

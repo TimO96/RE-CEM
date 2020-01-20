@@ -77,7 +77,8 @@ class CEM:
         overall_best_dist = [1e10] * batch_size
         overall_best_attack = [torch.zeros(imgs[0].shape).to(dvc)] * batch_size
         img_batch = imgs[:batch_size]
-        label_batch = labs[:batch_size]
+        target_lab = labs
+        #label_batch = labs[:batch_size]
 
         for c_steps_idx in range(self.c_steps):
             # completely reset adam's internal state.
@@ -87,18 +88,17 @@ class CEM:
 
             # set the variables so that we don't have to send them over again
             orig_img = img_batch.clone()
-            target_lab = label_batch
             adv_img = img_batch.clone()
             adv_img_slack = img_batch.clone().requires_grad_(True)
 
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr = self.lr_init)
-            utils.save_image(orig_img.squeeze(), 'original_image.png')
+            #utils.save_image(orig_img.squeeze(), 'original_image.png')
 
             for iteration in range(self.max_iterations):
                 # perform the attack
                 optimizer.zero_grad()
                 optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
-                loss, _, _, _, _, _ = evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
+                loss, _, _, _, _, _, _, _ = evaluation.loss(self.model, self.mode, orig_img, adv_img_slack, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta)
 
                 loss.backward()
                 optimizer.step()
@@ -109,21 +109,21 @@ class CEM:
                 # adv_img_slack.data = adv_img_slack_update.data
                 adv_img_slack.data = adv_img_slack_update.data
 
-                loss_no_opt, loss_EN, pred, loss_attack, loss_L2_dist, loss_L1_dist = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
+                loss_no_opt, loss_EN, pred, loss_attack, loss_L2_dist, loss_L1_dist, target_score, nontarget_score = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
 
 
-                if iteration%(self.max_iterations//10) == 0:
+                if iteration%(self.max_iterations//1000) == 0:
                     print(f"iter: {iteration} const: {c_start.item()}")
                     print("Loss_Overall:{:.4f}, Loss_Elastic:{:.4f}". format(loss_no_opt, loss_EN.item()))
                     print("Loss_attack:{:.4f}, Loss_L2:{:.4f}, Loss_L1:{:.4f}". format(loss_attack, loss_L2_dist, loss_L1_dist))
                     #utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
-                    #print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_lab_score[0], max_nontarget_lab_score_s[0]))
+                    print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_score.item(), nontarget_score))
                     print("")
                     sys.stdout.flush()
 
                 for batch_idx,(dist, score, the_adv_img) in enumerate(zip(loss_EN, pred, adv_img)):
-                    comp = compare(score, torch.argmax(label_batch[batch_idx]))
+                    comp = compare(score, torch.argmax(labs))
 
                     #
                     if dist < current_step_best_dist[batch_idx] and comp:
@@ -137,7 +137,7 @@ class CEM:
 
             # adjust the constant as needed
             for batch_idx in range(batch_size):
-                if compare(current_step_best_score[batch_idx], torch.argmax(label_batch[batch_idx])) and current_step_best_score[batch_idx] != -1:
+                if compare(current_step_best_score[batch_idx], torch.argmax(labs)) and current_step_best_score[batch_idx] != -1:
                     # success, divide const by two
                     upper_bound[batch_idx] = min(upper_bound[batch_idx], c_start[batch_idx])
                     if upper_bound[batch_idx] < 1e9:
