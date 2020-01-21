@@ -153,7 +153,6 @@ def model_prediction(model, inputs):
     Make a prediction for model given inputs.
     Returns: raw output, predicted class and raw output as string.
     """
-    print(inputs.shape)
     if len(inputs.shape) < 4:
         inputs = inputs.unsqueeze(0)
 

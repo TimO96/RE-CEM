@@ -6,7 +6,6 @@
 import sys
 import torch
 import numpy as np
-#import torchvision
 import fista
 import evaluation
 from polynomial_decay import poly_lr_scheduler
@@ -92,7 +91,6 @@ class CEM:
             # q = adv_img_slack.clone()
 
             for iteration in range(self.max_iterations):
-                print(adv_img.shape)
                 # perform the attack
                 optimizer.zero_grad()
                 optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)

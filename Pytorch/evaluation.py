@@ -86,26 +86,14 @@ def loss_function(model, mode, adv, delta, target_lab, kappa):
     elif mode == "PN":
         pred = model.predict(adv.unsqueeze(0))[0]
 
-    # print(pred)
-
     # Compute the probability of the label class versus the maximum others.
-    target_lab_score = torch.sum((target_lab) * pred)
-    # Inflate the real label in one-hot vector target_lab to infinity such that
-    # the best class from the other classes is predicted.
+    lab_score = torch.sum((target_lab) * pred)
+    max_nonlab_score = torch.max(pred[(1-target_lab).bool()])
 
-    # print(target_lab)
-
-    # max_nontarget_lab_score = torch.max((torch.ones(10)-target_lab) * pred - target_lab*10000
-    max_nontarget_lab_score = torch.max(pred[(1-target_lab).bool()])
-
-    zero = torch.tensor([0.], device=pred.device)
     if mode == "PP":
-        loss_attack = torch.max(zero, max_nontarget_lab_score - \
-                                target_lab_score + kappa)
+        f = max_nonlab_score - lab_score
     elif mode == "PN":
-        # print(max_nontarget_lab_score)
-        # print(type(max_nontarget_lab_score))
-        loss_attack = torch.max(zero, -max_nontarget_lab_score + \
-                                target_lab_score + kappa)
+        f = lab_score - max_nonlab_score
+    loss_attack = torch.max(torch.tensor([0.], device=pred.device), kappa + f)
 
-    return loss_attack, pred, target_lab_score, max_nontarget_lab_score
+    return loss_attack, pred, lab_score, max_nonlab_score
