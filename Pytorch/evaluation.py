@@ -31,8 +31,8 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
     delta = orig_img - adv
 
     # Distance to the input data.
-    L2_dist = torch.sum(delta**2, (1,2,3))
-    L1_dist = torch.sum(torch.abs(delta), (1,2,3))
+    L2_dist = torch.sum(delta**2)
+    L1_dist = torch.sum(torch.abs(delta))
     elastic_dist = L2_dist + L1_dist * beta
 
     # Calculate the total loss for the adversarial attack.
@@ -46,11 +46,13 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
 
     # Based on the mode compute the last term of the objective function which
     # is the L2 reconstruction error of the autoencoder.
-    if mode == "PP":
-        loss_AE_dist = gamma * (torch.norm(AE(delta) - delta)**2)
-    elif mode == "PN":
-        loss_AE_dist = gamma * (torch.norm(AE(delta + orig_img) - delta + \
-                                orig_img)**2)
+    loss_AE_dist = gamma
+    if gamma:
+        if mode == "PP":
+            loss_AE_dist *= torch.norm(AE(delta.unsqueeze(0))[0] - delta)**2
+        elif mode == "PN":
+            loss_AE_dist *= (torch.norm(AE((delta + orig_img).unsqueeze(0))[0] - delta + \
+                                    orig_img)**2)
 
     # Determine whether the L1 loss term should be added when FISTA is not
     # optimized.
@@ -80,9 +82,9 @@ def loss_function(model, mode, adv, delta, target_lab, kappa):
 
     # Prediction before softmax of the model.
     if mode == "PP":
-        pred = model.predict(delta)
+        pred = model.predict(delta.unsqueeze(0))[0]
     elif mode == "PN":
-        pred = model.predict(adv)
+        pred = model.predict(adv.unsqueeze(0))[0]
 
     # print(pred)
 
