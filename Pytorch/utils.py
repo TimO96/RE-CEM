@@ -153,7 +153,14 @@ def model_prediction(model, inputs):
     Make a prediction for model given inputs.
     Returns: raw output, predicted class and raw output as string.
     """
+    if len(inputs.shape) < 4:
+        inputs = inputs.unsqueeze(0)
+
     prob = model.predict(inputs)
+
+    if len(inputs.shape) < 4:
+        prob = prob[0]
+
     predicted_class = argmax(prob, dim=-1)
     prob_str = np.array2string(prob.cpu().data.numpy()).replace('\n','')
 

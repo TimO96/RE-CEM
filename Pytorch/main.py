@@ -31,7 +31,7 @@ import utils as util
 from CEM import CEM
 
 def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=100, beta=1e-1, gamma=10, dir='results', seed=121):
+         kappa=100, beta=1e-1, gamma=0, dir='results', seed=121):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
     # random.seed(seed)
     # np.random.seed(seed)
@@ -53,7 +53,7 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     attack = CEM(model, mode, AE_model, batch_size=1, learning_rate_init=1e-2,
                  c_init=init_const, c_steps=c_steps, max_iterations=arg_max_iter,
                  kappa=kappa, beta=beta, gamma=gamma)
-    adv_img = attack.attack(orig_img.unsqueeze(0), target.unsqueeze(0))
+    adv_img = attack.attack(orig_img, target)
 
     # Calculate probability classes for adversarial and delta image.
     adv_prob, adv_class, adv_prob_str = util.model_prediction(model, adv_img)
