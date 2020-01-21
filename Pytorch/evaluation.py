@@ -84,13 +84,17 @@ def loss_function(model, mode, adv, delta, target_lab, kappa):
     elif mode == "PN":
         pred = model.predict(adv)
 
-    print(pred)
+    # print(pred)
 
     # Compute the probability of the label class versus the maximum others.
     target_lab_score = torch.sum((target_lab) * pred)
     # Inflate the real label in one-hot vector target_lab to infinity such that
     # the best class from the other classes is predicted.
-    max_nontarget_lab_score = torch.max((torch.ones(10)-target_lab) * pred - target_lab*10000)
+
+    # print(target_lab)
+
+    # max_nontarget_lab_score = torch.max((torch.ones(10)-target_lab) * pred - target_lab*10000
+    max_nontarget_lab_score = torch.max(pred[(1-target_lab).bool()])
 
     zero = torch.tensor([0.], device=pred.device)
     if mode == "PP":

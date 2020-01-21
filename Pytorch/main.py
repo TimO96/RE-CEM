@@ -31,13 +31,14 @@ import utils as util
 from CEM import CEM
 
 def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=10, beta=1e-1, gamma=0, dir='results', seed=121):
+         kappa=100, beta=1e-1, gamma=10, dir='results', seed=121):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
     # random.seed(seed)
     # np.random.seed(seed)
 
     #Load autoencoder and MNIST dataset.
-    AE_model = util.load_AE("mnist_AE_weights").to(dvc)
+    # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
+    AE_model = util.AE(torch.load('models/MNIST_AE.pt')).to(dvc)
     data, model =  MNIST(dvc), MNISTModel(torch.load('models/MNIST_MNISTModel.pt')).to(dvc)
 
     # Get model prediction for image_id.
@@ -52,7 +53,7 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     attack = CEM(model, mode, AE_model, batch_size=1, learning_rate_init=1e-2,
                  c_init=init_const, c_steps=c_steps, max_iterations=arg_max_iter,
                  kappa=kappa, beta=beta, gamma=gamma)
-    adv_img = attack.attack(orig_img.unsqueeze(0), target)
+    adv_img = attack.attack(orig_img.unsqueeze(0), target.unsqueeze(0))
 
     # Calculate probability classes for adversarial and delta image.
     adv_prob, adv_class, adv_prob_str = util.model_prediction(model, adv_img)
@@ -72,8 +73,8 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     print(INFO)
 
     #Save image to Results
-    suffix = f"id{image_id}_kappa{kappa}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
-    save_dir = f"{dir}/{mode}_ID{image_id}_Gamma_{gamma}"
+    suffix = f"id{image_id}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
+    save_dir = f"{dir}/{mode}_ID{image_id}_Gamma_{gamma}_Kappa_{kappa}"
     os.system(f"mkdir -p {save_dir}")
     util.save_img(orig_img, f"{save_dir}/Orig_original{orig_class}")
     util.save_img(adv_img, f"{save_dir}/Adv_{suffix}")

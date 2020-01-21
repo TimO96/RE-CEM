@@ -59,7 +59,8 @@ class CEM:
             # Convert score to single number
             if not isinstance(score, (float, int)):
                 score = score.clone()
-                score[target] -= self.kappa if (self.mode == "PP") else -self.kappa
+                kappa = self.kappa if (self.mode == "PP") else -self.kappa
+                score[target] += kappa
                 score = torch.argmax(score)
 
             if self.mode == "PP":
@@ -77,7 +78,7 @@ class CEM:
         overall_best_dist = [1e10] * batch_size
         overall_best_attack = [torch.zeros(imgs[0].shape).to(dvc)] * batch_size
         img_batch = imgs[:batch_size]
-        target_lab = labs
+        target_lab = labs[:batch_size]
         #label_batch = labs[:batch_size]
 
         for c_steps_idx in range(self.c_steps):
@@ -112,13 +113,13 @@ class CEM:
                 loss_no_opt, loss_EN, pred, loss_attack, loss_L2_dist, loss_L1_dist, target_score, nontarget_score = evaluation.loss(self.model, self.mode, orig_img, adv_img, target_lab, self.AE, c_start, self.kappa, self.gamma, self.beta, to_optimize=False)
 
 
-                if iteration%(self.max_iterations//1000) == 0:
+                if iteration%(self.max_iterations//10) == 0:
                     print(f"iter: {iteration} const: {c_start.item()}")
-                    print("Loss_Overall:{:.4f}, Loss_Elastic:{:.4f}". format(loss_no_opt, loss_EN.item()))
-                    print("Loss_attack:{:.4f}, Loss_L2:{:.4f}, Loss_L1:{:.4f}". format(loss_attack, loss_L2_dist, loss_L1_dist))
+                    print("Loss_Overall:{:.3f}, Loss_Elastic:{:.3f}". format(loss_no_opt, loss_EN.item()))
+                    print("Loss_attack:{:.3f}, Loss_L2:{:.3f}, Loss_L1:{:.3f}". format(loss_attack, loss_L2_dist, loss_L1_dist))
                     #utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
                     #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
-                    print("target_lab_score:{:.4f}, max_nontarget_lab_score:{:.4f}". format(target_score.item(), nontarget_score))
+                    print("target_lab_score:{:.3f}, max_nontarget_lab_score:{:.3f}". format(target_score.item(), nontarget_score))
                     print("")
                     sys.stdout.flush()
 

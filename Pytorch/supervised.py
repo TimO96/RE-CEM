@@ -11,7 +11,7 @@ import argparse
 
 
 class Dataset:
-    def __init__(self, data, model, device='cuda:0', random=None):
+    def __init__(self, data, model, device='cuda:0', seed=None):
         """Initialize a dataset."""
         self.data  = data
         self.name  = data.__class__.__name__ + "_" + model.__class__.__name__
@@ -19,14 +19,14 @@ class Dataset:
         self.device = device
 
         # Seeding
-        if random is not None:
-            manual_seed(random)
+        if seed is not None:
+            manual_seed(seed)
             if cuda.is_available():
                 cudnn.deterministic = True
                 cudnn.benchmark = False
 
-    def train(self, epochs=3, optim=Adam, criterion=CrossEntropyLoss(),
-              stats=0, batch=500, optim_params={'lr':0.01}):
+    def train(self, epochs=150, optim=Adam, criterion=CrossEntropyLoss(),
+              stats=0, batch=128, optim_params={'lr':0.001}):
         """Train model with data."""
         optimizer = optim(self.model.parameters(), **optim_params)
 
@@ -106,16 +106,18 @@ def search(dset):
     opts = [Adam, Adagrad]
     for opt in opts:
         for lr in [0.01, 0.001]:
-            for b in [64, 128]:
+            for b in [32, 64, 100, 128]:
                 print(opt, lr, b)
-                train_model(dset, batch=b, epochs=50, optim=opt, optim_params={'lr':lr})
+                for seed in [10, 82, 43, 398, 112]:
+                    train_model(dset, seed, batch=b, epochs=150, optim=opt,
+                                optim_params={'lr':lr})
 
-def train_model(dset, **kwargs):
+def train_model(dset, seed=None, **kwargs):
     """Train a specific dataset."""
     device = 'cuda:0' if cuda.is_available() else 'cpu'
 
     if dset == 'MNIST':
-        dataset = Dataset(MNIST(device), MNISTModel(), device)
+        dataset = Dataset(MNIST(device), MNISTModel(), device, seed=seed)
     else:
         raise ModuleNotFoundError(f"Unsupported dataset {d}")
 
@@ -132,4 +134,4 @@ if __name__ == "__main__":
     if args['search']:
         search(args['dataset'])
     else:
-        train_model(args['dataset'], batch=64)
+        train_model(args['dataset'], batch=128)
