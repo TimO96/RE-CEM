@@ -68,23 +68,14 @@ class CEM:
             elif self.mode == "PN":
                 return score != target
 
-        # batch_size = self.batch_size
-
-        # set the lower and upper bounds accordingly
-        # lower_bound = torch.zeros(batch_size).to(dvc)
-        # c_start = torch.ones(batch_size).to(dvc) * self.c_init
-        # upper_bound = torch.ones(batch_size).to(dvc) * 1e10
-
+        # set the lower and upper bounds
         lower_bound = 0
         c_start = self.c_init
         upper_bound = 1e10
 
         # the best l2, score, and image attack
         overall_best_dist = 1e10
-        overall_best_attack = torch.zeros(imgs[0].shape).to(dvc)
-        # img_batch = imgs[:batch_size]
-        # labs = labs[:batch_size]
-        #label_batch = labs[:batch_size]
+        overall_best_attack = torch.zeros(imgs.shape).to(dvc)
 
         for c_steps_idx in range(self.c_steps):
             # completely reset adam's internal state.
@@ -98,11 +89,10 @@ class CEM:
             adv_img_slack = imgs.clone().requires_grad_(True)
 
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr=self.lr_init)
-            #utils.save_image(orig_img.squeeze(), 'original_image.png')
-
             # q = adv_img_slack.clone()
 
             for iteration in range(self.max_iterations):
+                print(adv_img.shape)
                 # perform the attack
                 optimizer.zero_grad()
                 optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
@@ -132,7 +122,6 @@ class CEM:
                                                                 adv_img_slack,
                                                                 orig_img)
 
-                # adv_img_slack.data = adv_img_slack_update.data
                 adv_img_slack.data = adv_img_slack_update.data
 
                 loss_no_opt, loss_EN, pred, loss_attack, loss_L2_dist, \
@@ -141,33 +130,27 @@ class CEM:
                      self.AE, c_start, self.kappa, self.gamma, self.beta,
                      to_optimize=False)
 
-
                 if iteration%(self.max_iterations//10) == 0:
                     print(f"iter: {iteration} const: {c_start}")
-                    # print(loss_no_opt, loss_EN)
                     print("Loss_Overall:{:.3f}, Loss_Elastic:{:.3f}". format(loss_no_opt, loss_EN))
                     print("Loss_attack:{:.3f}, Loss_L2:{:.3f}, Loss_L1:{:.3f}". format(loss_attack, loss_L2_dist, loss_L1_dist))
-                    #utils.save_image(adv_img.detach().squeeze(), str(c_steps_idx) + '-' + str(iteration) + '-img.png')
-                    #print("Loss_L2Dist:{:.4f}, Loss_L1Dist:{:.4f}, AE_loss:{}". format(Loss_L2Dist, Loss_L1Dist, Loss_AE_Dist))
                     print("labs_score:{:.3f}, max_nontarget_lab_score:{:.3f}". format(target_score.item(), nontarget_score))
                     print("")
                     sys.stdout.flush()
 
-                # for batch_idx,(dist, score, the_adv_img) in enumerate(zip(loss_EN, pred, adv_img)):
                 comp = compare(pred, torch.argmax(labs))
 
-                #
+                # Update current best
                 if loss_EN < current_step_best_dist and comp:
                     current_step_best_dist = loss_EN
                     current_step_best_score = torch.argmax(pred).item()
 
-                #
+                # Update global best
                 if loss_EN < overall_best_dist and comp:
                     overall_best_dist = loss_EN
                     overall_best_attack = adv_img
 
             # adjust the constant as needed
-            # for batch_idx in range(batch_size):
             if compare(current_step_best_score, torch.argmax(labs)) and current_step_best_score != -1:
                 # success, divide const by two
                 upper_bound = min(upper_bound, c_start)
