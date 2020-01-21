@@ -28,8 +28,8 @@ results should be in separated`
 - Kappa maximum (eq 4/2) `thing in the appendix is just wrong, in the end it doesnt matter, report if it converges to kappa or zero`
 
 # Questions 17/01
- - Skribbl.io?
- - Trying to get .996 (batch size 64):
+- Skribbl.io?
+- Trying to get .996 (batch size 64):
     - 55000 training examples
         ```
         <class 'torch.optim.adam.Adam'> 0.01
@@ -84,3 +84,5 @@ results should be in separated`
         <class 'torch.optim.adagrad.Adagrad'> 0.0001
         Train: 0.83 test: 0.844 valid: -1
         ```
+# Questions 21/01
+- What should be in the ipynb file?
