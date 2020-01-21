@@ -12,11 +12,12 @@ from polynomial_decay import poly_lr_scheduler
 from torchvision import utils
 from torch.autograd import Variable
 from torch import nn
+import ipdb
 
 
 class CEM:
-    def __init__(self, model, mode, AE, batch_size, learning_rate_init,
-                 c_init, c_steps, max_iterations, kappa, beta, gamma):
+    def __init__(self, model, mode, AE, learning_rate_init, c_init, c_steps,
+                 max_iterations, kappa, beta, gamma):
         """
         Constrastive Explanation Method (CEM) class initialization.
         Moreover, CEM is used to perform adversarial attacks with the autoencoder.
@@ -40,7 +41,6 @@ class CEM:
         self.model = model
         self.mode = mode
         self.AE = AE
-        self.batch_size = batch_size
         self.lr_init = learning_rate_init
         self.c_init = c_init
         self.c_steps = c_steps
@@ -51,7 +51,6 @@ class CEM:
 
     def attack(self, imgs, labs):
         """Perform attack on imgs."""
-        dvc = imgs.device
 
         def compare(score, target):
             """Compare score with target."""
@@ -67,61 +66,43 @@ class CEM:
             elif self.mode == "PN":
                 return score != target
 
-        # set the lower and upper bounds
-        lower_bound = 0
-        c_start = self.c_init
-        upper_bound = 1e10
+        dvc = imgs.device
 
-        # the best l2, score, and image attack
+        # set the lower and upper bounds, best distance, and image attack
+        lower_bound, c_start, upper_bound = 0, self.c_init, 1e10
         overall_best_dist = 1e10
         overall_best_attack = torch.zeros(imgs.shape).to(dvc)
 
         for c_steps_idx in range(self.c_steps):
-            # completely reset adam's internal state.
-
             current_step_best_dist = 1e10
             current_step_best_score = -1
 
             # set the variables so that we don't have to send them over again
             orig_img = imgs.clone()
-            adv_img = imgs.clone()
-            adv_img_slack = imgs.clone().requires_grad_(True)
+            adv_img = imgs.clone().fill_(0)
+            adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
 
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr=self.lr_init)
-            # q = adv_img_slack.clone()
 
             for iteration in range(self.max_iterations):
                 # perform the attack
                 optimizer.zero_grad()
                 optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)
-                loss, _, _, _, _, _, _, _ = evaluation.loss(self.model,
-                                                            self.mode,
-                                                            orig_img,
-                                                            adv_img_slack,
-                                                            labs,
-                                                            self.AE,
-                                                            c_start,
-                                                            self.kappa,
-                                                            self.gamma,
-                                                            self.beta)
 
+                # Optimize first part.
+                loss, _, _, _, _, _, _, _ = evaluation.loss(self.model,
+                    self.mode, orig_img, adv_img_slack, labs, self.AE, c_start,
+                    self.kappa, self.gamma, self.beta)
                 loss.backward()
                 optimizer.step()
 
-                # adv = optimizer.param_groups[0]['params'][0]
-                # print(ad)
-                # print(False in (q.view(28*28) == adv.view(28*28)))
-
+                # Optimize second part.
                 with torch.no_grad():
                     adv_img, adv_img_slack_update = fista.fista(self.mode,
-                                                                self.beta,
-                                                                iteration,
-                                                                adv_img,
-                                                                adv_img_slack,
-                                                                orig_img)
-
+                        self.beta, iteration, adv_img, adv_img_slack, orig_img)
                 adv_img_slack.data = adv_img_slack_update.data
 
+                # Get losses.
                 loss_no_opt, loss_EN, pred, loss_attack, loss_L2_dist, \
                 loss_L1_dist, target_score, nontarget_score = evaluation.loss(
                      self.model, self.mode, orig_img, adv_img, labs,
@@ -136,20 +117,18 @@ class CEM:
                     print("")
                     sys.stdout.flush()
 
+                # Update current & global.
                 comp = compare(pred, torch.argmax(labs))
-
-                # Update current best
                 if loss_EN < current_step_best_dist and comp:
                     current_step_best_dist = loss_EN
                     current_step_best_score = torch.argmax(pred).item()
-
-                # Update global best
                 if loss_EN < overall_best_dist and comp:
                     overall_best_dist = loss_EN
                     overall_best_attack = adv_img
 
             # adjust the constant as needed
-            if compare(current_step_best_score, torch.argmax(labs)) and current_step_best_score != -1:
+            if compare(current_step_best_score, torch.argmax(labs)) and \
+               current_step_best_score != -1:
                 # success, divide const by two
                 upper_bound = min(upper_bound, c_start)
                 if upper_bound < 1e9:

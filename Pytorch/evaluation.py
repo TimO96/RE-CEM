@@ -5,8 +5,8 @@
 
 import torch
 
-def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
-         gamma, beta, to_optimize=True):
+def loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
+         to_optimize=True):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PN) or pertinent negatives (PN).
@@ -14,8 +14,8 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
         - model         : nn model
         - mode          : perform either PN or PP analysis
         - orig_img      : image from dataset
-        - delta         : last perturbation
-        - target_lab    : label of the to be predicted target class
+        - adv           : adversarial image
+        - lab           : label of the to be predicted target class
         - AE            : autoencoder model for the adversarial attacks
         - c_start       : regularization coefficient (hyperparameter)
         - kappa         : confidence parameter to measure the distance
@@ -27,65 +27,51 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
         - computed loss between the most probable class and the most probable
           class given the pertubation (delta)
     """
-
     delta = orig_img - adv
 
     # Distance to the input data.
-    L2_dist = torch.sum(delta**2)
-    L1_dist = torch.sum(torch.abs(delta))
-    elastic_dist = L2_dist + L1_dist * beta
+    loss_L2, loss_L1 = torch.sum(delta**2), torch.sum(torch.abs(delta))
+    elastic_dist = loss_L2 + loss_L1 * beta
 
     # Calculate the total loss for the adversarial attack.
-    loss_attack, pred, target_score, nontarget_score = loss_function(model, mode, adv, delta, target_lab, kappa)
+    input = delta if (mode == "PP") else adv
 
-    # Sum up the losses.
-    loss_L1_dist = torch.sum(L1_dist)
-    loss_L2_dist = torch.sum(L2_dist)
+    # Prediction before softmax of the model.
+    pred = model.predict(input.unsqueeze(0))[0]
 
-    loss_attack = torch.sum(c_start * loss_attack)
+    loss_attack, lab_score, nonlab_score = loss_function(mode, pred, lab, kappa,
+                                                         c_start)
 
     # Based on the mode compute the last term of the objective function which
     # is the L2 reconstruction error of the autoencoder.
-    loss_AE_dist = gamma
+    loss_AE = gamma
     if gamma:
-        if mode == "PP":
-            loss_AE_dist *= torch.norm(AE(delta.unsqueeze(0))[0] - delta)**2
-        elif mode == "PN":
-            loss_AE_dist *= (torch.norm(AE((delta + orig_img).unsqueeze(0))[0] - delta + \
-                                    orig_img)**2)
+        loss_AE *= torch.norm(AE(input.unsqueeze(0))[0] - input)**2
 
     # Determine whether the L1 loss term should be added when FISTA is not
     # optimized.
-    if to_optimize:
-        loss = loss_attack + loss_L2_dist + loss_AE_dist
-    else:
-        loss = loss_attack + loss_L2_dist + loss_AE_dist + loss_L1_dist * beta
+    loss = loss_attack + loss_AE + loss_L2
+    if not to_optimize:
+         loss += loss_L1 * beta
 
-    return loss, elastic_dist, pred, loss_attack, loss_L2_dist, loss_L1_dist, target_score, nontarget_score
+    return loss, elastic_dist, pred, loss_attack, loss_L2, loss_L1, lab_score, \
+           nonlab_score
 
-def loss_function(model, mode, adv, delta, target_lab, kappa):
+def loss_function(mode, pred, target_lab, kappa, c_start):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PN) or pertinent negatives (PN).
     Input:
-        - model         : nn model
         - mode          : perform either PN or PP analysis
-        - orig_img      : image from dataset
-        - delta         : last perturbation
+        - pred          : prediction of model
         - target_lab    : label of the to be predicted target class
         - kappa         : confidence parameter to measure the distance
                           between target class and other classes
+        - c_start       : regularization coefficient (hyperparameter)
     Returns:
         - computed loss between the most probable class and the most probable
           class given the pertubation (delta) without regularizers.
     """
-
-    # Prediction before softmax of the model.
-    if mode == "PP":
-        pred = model.predict(delta.unsqueeze(0))[0]
-    elif mode == "PN":
-        pred = model.predict(adv.unsqueeze(0))[0]
-
     # Compute the probability of the label class versus the maximum others.
     lab_score = torch.sum((target_lab) * pred)
     max_nonlab_score = torch.max(pred[(1-target_lab).bool()])
@@ -96,4 +82,4 @@ def loss_function(model, mode, adv, delta, target_lab, kappa):
         f = lab_score - max_nonlab_score
     loss_attack = torch.max(torch.tensor([0.], device=pred.device), kappa + f)
 
-    return loss_attack, pred, lab_score, max_nonlab_score
+    return torch.sum(c_start * loss_attack), lab_score, max_nonlab_score

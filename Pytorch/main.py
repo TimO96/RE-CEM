@@ -21,28 +21,34 @@
 
 import os
 import sys
-import numpy as np
 import random
 import time
 from setup_mnist import MNIST, MNISTModel
 import torch
-from torch import cuda
+from torch import cuda, manual_seed
+from torch.backends import cudnn
 import utils as util
 from CEM import CEM
 
 def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=10, beta=1e-1, gamma=100, dir='results', seed=121):
+         kappa=100, beta=1e-1, gamma=0, dir='results', seed=None,
+         nn='models/MNIST_MNISTModel.pt', ae='models/MNIST_AE.pt'):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
-    # random.seed(seed)
-    # np.random.seed(seed)
+
+    if seed is not None:
+        random.seed(seed)
+        manual_seed(seed)
+        if cuda.is_available():
+            cudnn.deterministic = True
+            cudnn.benchmark = False
 
     #Load autoencoder and MNIST dataset.
     # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-    AE_model = util.AE(torch.load('models/MNIST_AE.pt')).to(dvc)
-    data, model =  MNIST(dvc), MNISTModel(torch.load('models/MNIST_MNISTModel.pt')).to(dvc)
+    AE_model = util.AE(torch.load(ae)).to(dvc)
+    data, model =  MNIST(dvc), MNISTModel(torch.load(nn)).to(dvc)
 
     # Get model prediction for image_id.
-    image = data.test_data[image_id].unsqueeze(0)
+    image = data.test_data[image_id]
     orig_prob, orig_class, orig_prob_str = util.model_prediction(model, image)
     target_label = orig_class
 
@@ -50,7 +56,7 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     print("Image:{}, infer label:{}".format(image_id, target_label))
 
     # Create adversarial image from original image.
-    attack = CEM(model, mode, AE_model, batch_size=1, learning_rate_init=1e-2,
+    attack = CEM(model, mode, AE_model, learning_rate_init=1e-2,
                  c_init=init_const, c_steps=c_steps, max_iterations=arg_max_iter,
                  kappa=kappa, beta=beta, gamma=gamma)
     adv_img = attack.attack(orig_img, target)
@@ -82,4 +88,4 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     sys.stdout.flush()
 
-main(image_id=2950, mode="PP")
+main(image_id=2950, mode="PN")
