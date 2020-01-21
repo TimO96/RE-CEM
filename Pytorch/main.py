@@ -82,4 +82,4 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     sys.stdout.flush()
 
-main(image_id=2950, mode="PN")
+main(image_id=2950, mode="PP")
