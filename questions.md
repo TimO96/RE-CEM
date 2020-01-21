@@ -86,3 +86,5 @@ results should be in separated`
         ```
 # Questions 21/01
 - What should be in the ipynb file?
+- Why could the addition of the autoencoder (both our trained and their pre-trained) worsen our results?
+- Method almost identical to the their method?
