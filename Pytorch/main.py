@@ -113,25 +113,26 @@ class Main:
             time = 'None'
 
         INFO = f"\n\
-    [INFO]\n\
-    id:          {self.id}                           \n\
-    mode:        {self.mode}                         \n\
-    time (s):    {time}                              \n\
-    kappa:       {self.kappa}                        \n\
-    Original:    {self.label} {self.str}             \n\
-    Delta:       {self.delta_label} {self.delta_str} \n\
-    Adversarial: {self.adv_label} {self.adv_str}     \n"
+                 [INFO]\n\
+                 id:          {self.id}                           \n\
+                 mode:        {self.mode}                         \n\
+                 time (s):    {time}                              \n\
+                 kappa:       {self.kappa}                        \n\
+                 Original:    {self.label} {self.str}             \n\
+                 Delta:       {self.delta_label} {self.delta_str} \n\
+                 Adversarial: {self.adv_label} {self.adv_str}     \n"
         print(INFO)
 
-    def store_images(s):
+    def store_images(self):
         """Store images to s.store directory."""
-        suffix = f"id{s.id}_Orig{s.label}_Adv{s.adv_label}_Delta{s.delta_label}"
-        save = f"{s.store}/{s.mode}_ID{s.id}_Gamma_{s.gamma}_Kappa_{s.kappa}"
+        suffix = f"id{self.id}_Orig{self.label}_Adv{self.adv_label}_Delta{self.delta_label}"
+        save = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}_Kappa_{self.kappa}"
         os.system(f"mkdir -p {save}")
 
-        util.save_img(s.img, f"{save}/Orig_{s.label}")
-        util.save_img(s.delta, f"{save}/Delta_{suffix}", s.mode)
-        util.save_img(s.img, f"{save}/Adv_{suffix}", s.mode, mode_img=s.delta)
+        util.save_img(self.img, f"{save}/Orig_{self.label}")
+        util.save_img(self.delta, f"{save}/Delta_{suffix}", self.mode)
+        util.save_img(self.img, f"{save}/Adv_{suffix}",
+                      self.mode, mode_img=self.delta)
 
     def run(self, id=2952):
         self.start = time.time()
