@@ -157,6 +157,7 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True):
 
     # name = 'output'
     pic.save(name+'.png')
+    return pic
 
 def generate_data(data, id, target_label):
     """

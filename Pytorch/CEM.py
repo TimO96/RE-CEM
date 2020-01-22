@@ -15,7 +15,7 @@ from torch import nn
 
 class CEM:
     def __init__(self, model, mode, AE, lr_init, c_init, c_steps,
-                 max_iterations, kappa, beta, gamma):
+                 max_iterations, kappa, beta, gamma, report):
         """
         Constrastive Explanation Method (CEM) class initialization.
         Moreover, CEM is used to perform adversarial attacks with the autoencoder.
@@ -34,6 +34,7 @@ class CEM:
             - beta               : regularization weight for the L1 loss term
             - gamma              : regularization weight for autoencoder loss
                                    function
+            - report             : print iterations
         """
         # Define model variables
         self.model = model
@@ -46,6 +47,7 @@ class CEM:
         self.kappa = kappa
         self.beta = beta
         self.gamma = gamma
+        self.report = report
 
     def attack(self, imgs, labs):
         """Perform attack on imgs."""
@@ -110,7 +112,7 @@ class CEM:
                      self.AE, c_start, self.kappa, self.gamma, self.beta,
                      to_optimize=False)
 
-                if iteration%(self.max_iterations//10) == 0:
+                if iteration%(self.max_iterations//10) == 0 and self.report:
                     print(f"iter: {iteration} const: {c_start}")
                     print("Loss_Overall:{:.3f}, Loss_Elastic:{:.3f}". format(loss_no_opt, loss_EN))
                     print("Loss_attack:{:.3f}, Loss_L2:{:.3f}, Loss_L1:{:.3f}". format(loss_attack, loss_L2_dist, loss_L1_dist))
