@@ -126,7 +126,8 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
 
     return ae
 
-def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True):
+def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True,
+             thres=10, intensity=None):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save tensor
     if save_tensor:
@@ -142,6 +143,14 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True):
         if mode_img is not None:
             mode_img = np.around((mode_img.cpu().data.numpy() + 0.5) * 255)
             mode_img = mode_img.astype(np.uint8).squeeze()
+
+            # Thresholding tricks.
+            fig[mode_img > thres] = 0
+            mode_img[mode_img <= thres] = 0
+            if intensity:
+                mode_img[mode_img > thres] = intensity
+
+            # Convert overlay to RGB.
             nfig[channel] = mode_img
             overlay = nfig.transpose(1,2,0)
         else:
@@ -150,6 +159,7 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True):
 
     pic = Image.fromarray(fig)
 
+    # Add overlay.
     if mode_img is not None:
         pic = np.array(pic.convert('RGB'))
         pic += overlay

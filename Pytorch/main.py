@@ -32,7 +32,7 @@ from CEM import CEM
 import matplotlib.pyplot as plt
 
 class Main:
-    def __init__(self, mode="PN", max_iter=1000, kappa=10, beta=1e-1, gamma=100,
+    def __init__(self, mode="PN", max_iter=10, kappa=10, beta=1e-1, gamma=100,
                  data=MNIST, nn='MNIST_MNISTModel.pt', ae='MNIST_AE.pt',
                  c_steps=9, c_init=10., lr_init=1e-2, seed=None, report=True,
                  model_dir='models/', store_dir='results/'):
@@ -99,7 +99,7 @@ class Main:
     def attack(self):
         """Perform the attack."""
         # Create adversarial image from original image.
-        self.adv = self.cem.attack(self.img, self.target)
+        self.adv = self.cem.attack(self.img, self.target).detach()
         delta = self.img-self.adv
 
         # Calculate probability classes for adversarial and delta image.
