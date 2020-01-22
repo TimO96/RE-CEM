@@ -90,3 +90,7 @@ results should be in separated`
 - Method almost identical to the their method? `Yes`
 - PP not working `Scaling`
 - Introduction `Include the claims in the paper`
+
+# Questions 24/01
+- Thresholding the result images?
+- Inits with zeroes works, with images doesn't
