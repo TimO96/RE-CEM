@@ -14,7 +14,7 @@ from torch.autograd import Variable
 from torch import nn
 
 class CEM:
-    def __init__(self, model, mode, AE, learning_rate_init, c_init, c_steps,
+    def __init__(self, model, mode, AE, lr_init, c_init, c_steps,
                  max_iterations, kappa, beta, gamma):
         """
         Constrastive Explanation Method (CEM) class initialization.
@@ -24,7 +24,7 @@ class CEM:
             - mode               : perform either PN or PP analysis
             - AE                 : autoencoder model for the adversarial attacks
             - batch_size         : number of data instances to be analyzed
-            - learning_rate_init : starting learning rate for the optimizer
+            - lr_init            : starting learning rate for the optimizer
             - c_init             : starting weight constant of the loss function
             - c_steps            : number of iterations in which the constant c
                                    is adjusted
@@ -39,7 +39,7 @@ class CEM:
         self.model = model
         self.mode = mode
         self.AE = AE
-        self.lr_init = learning_rate_init
+        self.lr_init = lr_init
         self.c_init = c_init
         self.c_steps = c_steps
         self.max_iterations = max_iterations
