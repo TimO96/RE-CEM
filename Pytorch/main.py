@@ -30,6 +30,7 @@ from torch.backends import cudnn
 import utils as util
 from CEM import CEM
 import matplotlib.pyplot as plt
+from torchsummary import summary
 
 class Main:
     def __init__(self, mode="PN", max_iter=10, kappa=10, beta=1e-1, gamma=100,
@@ -144,6 +145,14 @@ class Main:
         ax[1].imshow(self.adv_pic)
         plt.show()
 
+    def summary(self):
+        shape = (self.ae.image_size, self.ae.image_size, self.ae.num_channels)
+        summary(self.ae, shape)
+        summary(self.nn, shape)
+
+        print(str(self.nn))
+        print(str(self.ae))
+
     def run(self, id=2952, show=True):
         """Run the algorithm for specific image."""
         self.start = time.time()
@@ -155,7 +164,8 @@ class Main:
         if show:
             self.show_images()
 
-# pp = Main(mode='PP')
+pp = Main(mode='PP')
+pp.summary()
 # pn = Main(mode='PN')
 # pp.run(1234)
 # pn.run(1234)
