@@ -31,7 +31,7 @@ import utils as util
 from CEM import CEM
 
 def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=100, beta=1e-1, gamma=0, dir='results', seed=None,
+         kappa=10, beta=1e-1, gamma=100, dir='results', seed=None,
          nn='models/MNIST_MNISTModel.pt', ae='models/MNIST_AE.pt'):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
 
@@ -89,4 +89,4 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     sys.stdout.flush()
 
-main(image_id=2952, mode="PP")
+main(image_id=2945, mode="PP")
