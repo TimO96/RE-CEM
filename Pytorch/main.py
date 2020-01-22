@@ -62,8 +62,8 @@ class Main:
 
         #Load autoencoder and MNIST dataset.
         # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-        self.ae = util.AE(torch.load(model_dir+ae, map_location=torch.device(dvc))).to(dvc)
-        self.nn = MNISTModel(torch.load(model_dir+nn, map_location=torch.device(dvc))).to(dvc)
+        self.ae = util.AE(torch.load(model_dir+ae, map_location=dvc)).to(dvc)
+        self.nn = MNISTModel(torch.load(model_dir+nn, map_location=dvc)).to(dvc)
         self.data = data(dvc)
         self.mode = mode
         self.kappa = kappa
