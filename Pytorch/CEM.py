@@ -92,7 +92,6 @@ class CEM:
             # q = adv_img_slack.clone()
 
             for iteration in range(self.max_iterations):
-                print(adv_img.shape)
                 # perform the attack
                 optimizer.zero_grad()
                 optimizer = poly_lr_scheduler(optimizer, self.lr_init, iteration)

@@ -9,7 +9,7 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
          gamma, beta, to_optimize=True):
     """
     Compute the loss function component for the network to find either
-    pertinent positives (PN) or pertinent negatives (PN).
+    pertinent positives (PP) or pertinent negatives (PN).
     Input:
         - model         : nn model
         - mode          : perform either PN or PP analysis
@@ -66,7 +66,7 @@ def loss(model, mode, orig_img, adv, target_lab, AE, c_start, kappa,
 def loss_function(model, mode, adv, delta, target_lab, kappa):
     """
     Compute the loss function component for the network to find either
-    pertinent positives (PN) or pertinent negatives (PN).
+    pertinent positives (PP) or pertinent negatives (PN).
     Input:
         - model         : nn model
         - mode          : perform either PN or PP analysis
