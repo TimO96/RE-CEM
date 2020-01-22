@@ -126,7 +126,7 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
 
     return ae
 
-def save_img(img, name="output", save_tensor=True):
+def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save tensor
     if save_tensor:
@@ -135,7 +135,27 @@ def save_img(img, name="output", save_tensor=True):
     # Save image, invert MNIST read
     fig = np.around((img.cpu().data.numpy() + 0.5) * 255)
     fig = fig.astype(np.uint8).squeeze()
+
+    if channel:
+        channel = 1 if (channel == 'PP') else 0
+        nfig = np.zeros((3, *fig.shape)).astype(np.uint8)
+        if mode_img is not None:
+            mode_img = np.around((mode_img.cpu().data.numpy() + 0.5) * 255)
+            mode_img = mode_img.astype(np.uint8).squeeze()
+            nfig[channel] = mode_img
+            overlay = nfig.transpose(1,2,0)
+        else:
+            nfig[channel] = fig
+            fig = nfig.transpose(1,2,0)
+
     pic = Image.fromarray(fig)
+
+    if mode_img is not None:
+        pic = np.array(pic.convert('RGB'))
+        pic += overlay
+        pic = Image.fromarray(pic)
+
+    # name = 'output'
     pic.save(name+'.png')
 
 def generate_data(data, id, target_label):

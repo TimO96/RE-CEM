@@ -31,7 +31,7 @@ import utils as util
 from CEM import CEM
 
 def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=100, beta=1e-1, gamma=0, dir='results', seed=None,
+         kappa=10, beta=1e-1, gamma=0, dir='results', seed=None,
          nn='models/MNIST_MNISTModel.pt', ae='models/MNIST_AE.pt'):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
 
@@ -44,8 +44,8 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     #Load autoencoder and MNIST dataset.
     # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-    AE_model = util.AE(torch.load(ae, map_location=torch.device(dvc))).to(dvc)
-    data, model =  MNIST(dvc), MNISTModel(torch.load(nn, map_location=torch.device(dvc))).to(dvc)
+    AE_model = util.AE(torch.load(ae)).to(dvc)
+    data, model =  MNIST(dvc), MNISTModel(torch.load(nn)).to(dvc)
 
     # Get model prediction for image_id.
     image = data.test_data[image_id]
@@ -75,18 +75,16 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
   Adversarial: {adv_class} {adv_prob_str}     \n"
     print(INFO)
 
-    # Orig class:  {orig_class},    \n\
-    # Adv class:   {adv_class},     \n\
-    # Delta class: {delta_class},   \n\
-
     #Save image to Results
     suffix = f"id{image_id}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
     save_dir = f"{dir}/{mode}_ID{image_id}_Gamma_{gamma}_Kappa_{kappa}"
     os.system(f"mkdir -p {save_dir}")
-    util.save_img(orig_img, f"{save_dir}/Orig_original{orig_class}")
-    util.save_img(adv_img, f"{save_dir}/Adv_{suffix}")
-    util.save_img(torch.abs(orig_img-adv_img)-0.5, f"{save_dir}/Delta_{suffix}")
+
+    delta = torch.abs(orig_img-adv_img)-0.5
+    util.save_img(orig_img, f"{save_dir}/Orig_{orig_class}")
+    util.save_img(delta, f"{save_dir}/Delta_{suffix}", mode)
+    util.save_img(orig_img, f"{save_dir}/Adv_{suffix}", mode, mode_img=delta)
 
     sys.stdout.flush()
 
-main(image_id=2952, mode="PP")
+main(image_id=2952, mode="PN")
