@@ -21,28 +21,34 @@
 
 import os
 import sys
-import numpy as np
 import random
 import time
 from setup_mnist import MNIST, MNISTModel
 import torch
-from torch import cuda
+from torch import cuda, manual_seed
+from torch.backends import cudnn
 import utils as util
 from CEM import CEM
 
 def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=10, beta=1e-1, gamma=100, dir='results', seed=121):
+         kappa=100, beta=1e-1, gamma=0, dir='results', seed=None,
+         nn='models/MNIST_MNISTModel.pt', ae='models/MNIST_AE.pt'):
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
-    # random.seed(seed)
-    # np.random.seed(seed)
+
+    if seed is not None:
+        random.seed(seed)
+        manual_seed(seed)
+        if cuda.is_available():
+            cudnn.deterministic = True
+            cudnn.benchmark = False
 
     #Load autoencoder and MNIST dataset.
     # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-    AE_model = util.AE(torch.load('models/MNIST_AE.pt')).to(dvc)
-    data, model =  MNIST(dvc), MNISTModel(torch.load('models/MNIST_MNISTModel.pt')).to(dvc)
+    AE_model = util.AE(torch.load(ae, map_location=torch.device(dvc))).to(dvc)
+    data, model =  MNIST(dvc), MNISTModel(torch.load(nn, map_location=torch.device(dvc))).to(dvc)
 
     # Get model prediction for image_id.
-    image = data.test_data[image_id].unsqueeze(0)
+    image = data.test_data[image_id]
     orig_prob, orig_class, orig_prob_str = util.model_prediction(model, image)
     target_label = orig_class
 
@@ -50,7 +56,7 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     print("Image:{}, infer label:{}".format(image_id, target_label))
 
     # Create adversarial image from original image.
-    attack = CEM(model, mode, AE_model, batch_size=1, learning_rate_init=1e-2,
+    attack = CEM(model, mode, AE_model, learning_rate_init=1e-2,
                  c_init=init_const, c_steps=c_steps, max_iterations=arg_max_iter,
                  kappa=kappa, beta=beta, gamma=gamma)
     adv_img = attack.attack(orig_img, target)
@@ -62,15 +68,16 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     # Print some info.
     INFO = f"\n\
   [INFO]\n\
-  id:          {image_id},      \n\
-  kappa:       {kappa},         \n\
-  Orig class:  {orig_class},    \n\
-  Adv class:   {adv_class},     \n\
-  Delta class: {delta_class},   \n\
-  Orig prob:   {orig_prob_str}, \n\
-  Adv prob:    {adv_prob_str},  \n\
-  Delta prob:  {delta_prob_str} \n"
+  id:          {image_id}                     \n\
+  kappa:       {kappa}                        \n\
+  Original:    {orig_class} {orig_prob_str}   \n\
+  Delta:       {delta_class} {delta_prob_str} \n\
+  Adversarial: {adv_class} {adv_prob_str}     \n"
     print(INFO)
+
+    # Orig class:  {orig_class},    \n\
+    # Adv class:   {adv_class},     \n\
+    # Delta class: {delta_class},   \n\
 
     #Save image to Results
     suffix = f"id{image_id}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
@@ -82,4 +89,4 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     sys.stdout.flush()
 
-main(image_id=2950, mode="PP")
+main(image_id=2952, mode="PP")
