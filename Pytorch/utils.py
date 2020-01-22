@@ -179,12 +179,12 @@ def space(list, best):
         # Nums betwen -10 and 10 need extra space
         if number < 10 and number > -10:
             num += ' '
-        num += str(number)+', '
+        num += str(number)
 
         # Color if best
         if i == best:
             num = '\033[92m'+num+'\033[0m'
-        liststr += num
+        liststr += num+', '
 
     return liststr[:-2] + ']'
 
