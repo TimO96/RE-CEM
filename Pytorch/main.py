@@ -44,8 +44,8 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     #Load autoencoder and MNIST dataset.
     # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-    AE_model = util.AE(torch.load(ae)).to(dvc)
-    data, model =  MNIST(dvc), MNISTModel(torch.load(nn)).to(dvc)
+    AE_model = util.AE(torch.load(ae, map_location=torch.device(dvc))).to(dvc)
+    data, model =  MNIST(dvc), MNISTModel(torch.load(nn, map_location=torch.device(dvc))).to(dvc)
 
     # Get model prediction for image_id.
     image = data.test_data[image_id]
