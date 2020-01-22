@@ -46,7 +46,7 @@ def loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
     # is the L2 reconstruction error of the autoencoder.
     loss_AE = gamma
     if gamma:
-        loss_AE *= torch.norm(AE(input.unsqueeze(0))[0] - input)**2
+        loss_AE *= torch.sum((AE(input.unsqueeze(0))[0] - input)**2)
 
     # Determine whether the L1 loss term should be added when FISTA is not
     # optimized.

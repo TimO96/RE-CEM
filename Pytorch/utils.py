@@ -153,18 +153,40 @@ def model_prediction(model, inputs):
     Make a prediction for model given inputs.
     Returns: raw output, predicted class and raw output as string.
     """
-    if len(inputs.shape) < 4:
+    squeeze = len(inputs.shape) < 4
+    if squeeze:
         inputs = inputs.unsqueeze(0)
 
     prob = model.predict(inputs)
-
-    if len(inputs.shape) < 4:
+    if squeeze:
         prob = prob[0]
 
-    predicted_class = argmax(prob, dim=-1)
-    prob_str = np.array2string(prob.cpu().data.numpy()).replace('\n','')
+    pred_class = argmax(prob, dim=-1).item()
+    prob_str = space([round(x,1) for x in prob.tolist()], pred_class)
 
-    return prob, predicted_class.item(), prob_str
+    return prob, pred_class, prob_str
+
+def space(list, best):
+    """Pretty print a list, with coloured highest number."""
+    liststr = '['
+
+    for i, number in enumerate(list):
+        num = ''
+
+        # Negatives need extra space.
+        if number > 0:
+            num += ' '
+        # Nums betwen -10 and 10 need extra space
+        if number < 10 and number > -10:
+            num += ' '
+        num += str(number)+', '
+
+        # Color if best
+        if i == best:
+            num = '\033[92m'+num+'\033[0m'
+        liststr += num
+
+    return liststr[:-2] + ']'
 
 # Example
 # ae = load_AE('mnist_AE_weights', True)

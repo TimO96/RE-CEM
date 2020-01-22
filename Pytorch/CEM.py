@@ -12,8 +12,6 @@ from polynomial_decay import poly_lr_scheduler
 from torchvision import utils
 from torch.autograd import Variable
 from torch import nn
-import ipdb
-
 
 class CEM:
     def __init__(self, model, mode, AE, learning_rate_init, c_init, c_steps,
@@ -81,6 +79,9 @@ class CEM:
             orig_img = imgs.clone()
             adv_img = imgs.clone().fill_(0)
             adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
+
+            # adv_img = imgs.clone()
+            # adv_img_slack = imgs.clone().requires_grad_(True)
 
             optimizer = torch.optim.SGD(params=[adv_img_slack], lr=self.lr_init)
 

@@ -68,15 +68,16 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     # Print some info.
     INFO = f"\n\
   [INFO]\n\
-  id:          {image_id},      \n\
-  kappa:       {kappa},         \n\
-  Orig class:  {orig_class},    \n\
-  Adv class:   {adv_class},     \n\
-  Delta class: {delta_class},   \n\
-  Orig prob:   {orig_prob_str}, \n\
-  Adv prob:    {adv_prob_str},  \n\
-  Delta prob:  {delta_prob_str} \n"
+  id:          {image_id}                     \n\
+  kappa:       {kappa}                        \n\
+  Original:    {orig_class} {orig_prob_str}   \n\
+  Delta:       {delta_class} {delta_prob_str} \n\
+  Adversarial: {adv_class} {adv_prob_str}     \n"
     print(INFO)
+
+    # Orig class:  {orig_class},    \n\
+    # Adv class:   {adv_class},     \n\
+    # Delta class: {delta_class},   \n\
 
     #Save image to Results
     suffix = f"id{image_id}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
@@ -88,4 +89,4 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
 
     sys.stdout.flush()
 
-main(image_id=2950, mode="PN")
+main(image_id=2952, mode="PP")
