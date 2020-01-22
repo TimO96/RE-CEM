@@ -68,7 +68,7 @@ def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
     delta_prob, delta_class, delta_prob_str = util.model_prediction(model, orig_img-adv_img)
 
     # Print some info.
-    if quant_res==False:
+    if not quant_res:
         INFO = f"\n\
       [INFO]\n\
       id:          {image_id}                     \n\
