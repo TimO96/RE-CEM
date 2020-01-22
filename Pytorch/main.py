@@ -29,11 +29,12 @@ from torch import cuda, manual_seed
 from torch.backends import cudnn
 import utils as util
 from CEM import CEM
+import matplotlib.pyplot as plt
 
 class Main:
     def __init__(self, mode="PN", max_iter=1000, kappa=10, beta=1e-1, gamma=100,
                  data=MNIST, nn='MNIST_MNISTModel.pt', ae='MNIST_AE.pt',
-                 c_steps=9, c_init=10., lr_init=1e-2, seed=None,
+                 c_steps=9, c_init=10., lr_init=1e-2, seed=None, report=True,
                  model_dir='models/', store_dir='results/'):
         """Initializing the main CEM attack module.
 
@@ -50,6 +51,7 @@ class Main:
         - c_init    : initial loss constant
         - lr_init   : initial learning rate of SGD
         - seed      : random seed
+        - report    : print interations
         - model_dir : directory where models are stored
         - store_dir : directory to store images
 
@@ -60,8 +62,8 @@ class Main:
 
         #Load autoencoder and MNIST dataset.
         # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-        self.ae = util.AE(torch.load(model_dir+ae)).to(dvc)
-        self.nn = MNISTModel(torch.load(model_dir+nn)).to(dvc)
+        self.ae = util.AE(torch.load(model_dir+ae, map_location=dvc)).to(dvc)
+        self.nn = MNISTModel(torch.load(model_dir+nn, map_location=dvc)).to(dvc)
         self.data = data(dvc)
         self.mode = mode
         self.kappa = kappa
@@ -71,7 +73,7 @@ class Main:
 
         self.cem = CEM(self.nn, mode, self.ae, lr_init=lr_init, c_init=c_init,
                        c_steps=c_steps, max_iterations=max_iter, kappa=kappa,
-                       beta=beta, gamma=gamma)
+                       beta=beta, gamma=gamma, report=report)
 
     def set_seed(self, seed):
         """Set the random seeds."""
@@ -129,20 +131,31 @@ class Main:
         save = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}_Kappa_{self.kappa}"
         os.system(f"mkdir -p {save}")
 
-        util.save_img(self.img, f"{save}/Orig_{self.label}")
-        util.save_img(self.delta, f"{save}/Delta_{suffix}", self.mode)
-        util.save_img(self.img, f"{save}/Adv_{suffix}",
-                      self.mode, mode_img=self.delta)
+        self.img_pic = util.save_img(self.img, f"{save}/Orig_{self.label}")
+        self.delta_pic = util.save_img(self.delta, f"{save}/Delta_{suffix}", self.mode)
+        self.adv_pic = util.save_img(self.img, f"{save}/Adv_{suffix}", self.mode, mode_img=self.delta)
 
-    def run(self, id=2952):
+    def show_images(self, w=18.5, h=10.5):
+        """Show img, delta and adv next to each other."""
+        f, ax = plt.subplots(1,3)
+        f.set_size_inches(w, h)
+        ax[0].imshow(self.img_pic, cmap='gray', vmin=0, vmax=255)
+        ax[2].imshow(self.delta_pic)
+        ax[1].imshow(self.adv_pic)
+        plt.show()
+
+    def run(self, id=2952, show=True):
+        """Run the algorithm for specific image."""
         self.start = time.time()
         self.set_image(id)
         self.attack()
         self.end = time.time()
         self.report()
         self.store_images()
+        if show:
+            self.show_images()
 
-pp = Main(mode='PP')
-pn = Main(mode='PN')
-pp.run(1232)
-pn.run(1232)
+# pp = Main(mode='PP')
+# pn = Main(mode='PN')
+# pp.run(1234)
+# pn.run(1234)
