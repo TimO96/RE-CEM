@@ -4,3 +4,4 @@
 - Constant upper and lower bound not mentioned in the paper?
 - Projection is applied differently as mentioned in the paper, but should work without binarizing the data
 - 0 initializing of adv_img
+- Constant is not 0.1, but 10 as an initial value

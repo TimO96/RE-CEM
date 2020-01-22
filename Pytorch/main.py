@@ -31,7 +31,7 @@ import utils as util
 from CEM import CEM
 
 class Main:
-    def __init__(self, mode="PN", max_iter=100, kappa=10, beta=1e-1, gamma=100,
+    def __init__(self, mode="PN", max_iter=1000, kappa=10, beta=1e-1, gamma=100,
                  data=MNIST, nn='MNIST_MNISTModel.pt', ae='MNIST_AE.pt',
                  c_steps=9, c_init=10., lr_init=1e-2, seed=None,
                  model_dir='models/', store_dir='results/'):
@@ -143,5 +143,5 @@ class Main:
 
 pp = Main(mode='PP')
 pn = Main(mode='PN')
-pp.run(1234)
-pn.run(1234)
+pp.run(1232)
+pn.run(1232)
