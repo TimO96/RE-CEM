@@ -30,61 +30,118 @@ from torch.backends import cudnn
 import utils as util
 from CEM import CEM
 
-def main(image_id, arg_max_iter=1000, c_steps=9, init_const=10.0, mode="PN",
-         kappa=10, beta=1e-1, gamma=100, dir='results', seed=None,
-         nn='models/MNIST_MNISTModel.pt', ae='models/MNIST_AE.pt'):
-    dvc = 'cuda:0' if cuda.is_available() else 'cpu'
+class Main:
+    def __init__(self, mode="PN", max_iter=100, kappa=10, beta=1e-1, gamma=100,
+                 data=MNIST, nn='MNIST_MNISTModel.pt', ae='MNIST_AE.pt',
+                 c_steps=9, c_init=10., lr_init=1e-2, seed=None,
+                 model_dir='models/', store_dir='results/'):
+        """Initializing the main CEM attack module.
 
-    if seed is not None:
-        random.seed(seed)
-        manual_seed(seed)
-        if cuda.is_available():
-            cudnn.deterministic = True
-            cudnn.benchmark = False
+        Inputs:
+        - mode      : search mode; "PN" or "PP"
+        - max_iter  : maximum iterations running the attack
+        - kappa     : confidence distance between label en max_nonlabel
+        - beta      : fista regularizer
+        - gamma     : weight of the ae
+        - data      : dataloader to read images from
+        - nn        : model ('black box' classifier)
+        - ae        : autoencoder trained on data
+        - c_steps   : amount of times to changes loss constant
+        - c_init    : initial loss constant
+        - lr_init   : initial learning rate of SGD
+        - seed      : random seed
+        - model_dir : directory where models are stored
+        - store_dir : directory to store images
 
-    #Load autoencoder and MNIST dataset.
-    # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-    AE_model = util.AE(torch.load(ae)).to(dvc)
-    data, model =  MNIST(dvc), MNISTModel(torch.load(nn)).to(dvc)
+        Returns: a MAIN object
+        """
+        dvc = 'cuda:0' if cuda.is_available() else 'cpu'
+        self.set_seed(seed)
 
-    # Get model prediction for image_id.
-    image = data.test_data[image_id]
-    orig_prob, orig_class, orig_prob_str = util.model_prediction(model, image)
-    target_label = orig_class
+        #Load autoencoder and MNIST dataset.
+        # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
+        self.ae = util.AE(torch.load(model_dir+ae)).to(dvc)
+        self.nn = MNISTModel(torch.load(model_dir+nn)).to(dvc)
+        self.data = data(dvc)
+        self.mode = mode
+        self.kappa = kappa
+        self.gamma = gamma
+        self.store = store_dir
+        self.start, self.end = None, None
 
-    orig_img, target = util.generate_data(data, image_id, target_label)
-    print("Image:{}, infer label:{}".format(image_id, target_label))
+        self.cem = CEM(self.nn, mode, self.ae, lr_init=lr_init, c_init=c_init,
+                       c_steps=c_steps, max_iterations=max_iter, kappa=kappa,
+                       beta=beta, gamma=gamma)
 
-    # Create adversarial image from original image.
-    attack = CEM(model, mode, AE_model, learning_rate_init=1e-2,
-                 c_init=init_const, c_steps=c_steps, max_iterations=arg_max_iter,
-                 kappa=kappa, beta=beta, gamma=gamma)
-    adv_img = attack.attack(orig_img, target)
+    def set_seed(self, seed):
+        """Set the random seeds."""
+        if seed is not None:
+            random.seed(seed)
+            manual_seed(seed)
+            if cuda.is_available():
+                cudnn.deterministic = True
+                cudnn.benchmark = False
 
-    # Calculate probability classes for adversarial and delta image.
-    adv_prob, adv_class, adv_prob_str = util.model_prediction(model, adv_img)
-    delta_prob, delta_class, delta_prob_str = util.model_prediction(model, orig_img-adv_img)
+    def set_image(self, id):
+        """Load an image with id."""
+        self.id = id
+        image = self.data.test_data[id]
+        self.pred, self.label, self.str = self.prediction(image)
+        self.img, self.target = util.generate_data(self.data, id, self.label)
+        print(f"Image:{id}, infer label:{self.label}")
 
-    # Print some info.
-    INFO = f"\n\
-  [INFO]\n\
-  id:          {image_id}                     \n\
-  kappa:       {kappa}                        \n\
-  Original:    {orig_class} {orig_prob_str}   \n\
-  Delta:       {delta_class} {delta_prob_str} \n\
-  Adversarial: {adv_class} {adv_prob_str}     \n"
-    print(INFO)
+    def prediction(self, data):
+        """Do a prediction on data."""
+        return util.model_prediction(self.nn, data)
 
-    #Save image to Results
-    suffix = f"id{image_id}_Orig{orig_class}_Adv{adv_class}_Delta{delta_class}"
-    save_dir = f"{dir}/{mode}_ID{image_id}_Gamma_{gamma}_Kappa_{kappa}"
-    os.system(f"mkdir -p {save_dir}")
+    def attack(self):
+        """Perform the attack."""
+        # Create adversarial image from original image.
+        self.adv = self.cem.attack(self.img, self.target)
+        delta = self.img-self.adv
 
-    delta = torch.abs(orig_img-adv_img)-0.5
-    util.save_img(orig_img, f"{save_dir}/Orig_{orig_class}")
-    util.save_img(delta, f"{save_dir}/Delta_{suffix}", mode)
-    util.save_img(orig_img, f"{save_dir}/Adv_{suffix}", mode, mode_img=delta)
+        # Calculate probability classes for adversarial and delta image.
+        self.adv_pred, self.adv_label, self.adv_str = self.prediction(self.adv)
+        self.delta_pred, self.delta_label, self.delta_str = self.prediction(delta)
+        self.delta = torch.abs(delta)-0.5
 
-    sys.stdout.flush()
+    def report(self):
+        """Print report."""
+        try:
+            time = round(self.end - self.start, 1)
+        except:
+            time = 'None'
 
-main(image_id=2952, mode="PN")
+        INFO = f"\n\
+    [INFO]\n\
+    id:          {self.id}                           \n\
+    mode:        {self.mode}                         \n\
+    time (s):    {time}                              \n\
+    kappa:       {self.kappa}                        \n\
+    Original:    {self.label} {self.str}             \n\
+    Delta:       {self.delta_label} {self.delta_str} \n\
+    Adversarial: {self.adv_label} {self.adv_str}     \n"
+        print(INFO)
+
+    def store_images(s):
+        """Store images to s.store directory."""
+        suffix = f"id{s.id}_Orig{s.label}_Adv{s.adv_label}_Delta{s.delta_label}"
+        save = f"{s.store}/{s.mode}_ID{s.id}_Gamma_{s.gamma}_Kappa_{s.kappa}"
+        os.system(f"mkdir -p {save}")
+
+        util.save_img(s.img, f"{save}/Orig_{s.label}")
+        util.save_img(s.delta, f"{save}/Delta_{suffix}", s.mode)
+        util.save_img(s.img, f"{save}/Adv_{suffix}", s.mode, mode_img=s.delta)
+
+    def run(self, id=2952):
+        self.start = time.time()
+        self.set_image(id)
+        self.attack()
+        self.end = time.time()
+        self.report()
+        self.store_images()
+
+pp = Main(mode='PP')
+pn = Main(mode='PN')
+pp.run(1234)
+pn.run(1234)
