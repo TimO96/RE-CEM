@@ -85,6 +85,8 @@ results should be in separated`
         Train: 0.83 test: 0.844 valid: -1
         ```
 # Questions 21/01
-- What should be in the ipynb file?
-- Why could the addition of the autoencoder (both our trained and their pre-trained) worsen our results?
-- Method almost identical to the their method?
+- What should be in the ipynb file? `We'll get an example on canvas`
+- Why could the addition of the autoencoder (both our trained and their pre-trained) worsen our results? `Scaling`
+- Method almost identical to the their method? `Yes`
+- PP not working `Scaling`
+- Introduction `Include the claims in the paper`
