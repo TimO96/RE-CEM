@@ -62,8 +62,8 @@ class Main:
 
         #Load autoencoder and MNIST dataset.
         # AE_model = util.load_AE("mnist_AE_weights").to(dvc)
-        self.ae = util.AE(torch.load(model_dir+ae)).to(dvc)
-        self.nn = MNISTModel(torch.load(model_dir+nn)).to(dvc)
+        self.ae = util.AE(torch.load(model_dir+ae, map_location=dvc)).to(dvc)
+        self.nn = MNISTModel(torch.load(model_dir+nn, map_location=dvc)).to(dvc)
         self.data = data(dvc)
         self.mode = mode
         self.kappa = kappa
@@ -115,25 +115,25 @@ class Main:
             time = 'None'
 
         INFO = f"\n\
-    [INFO]\n\
-    id:          {self.id}                           \n\
-    mode:        {self.mode}                         \n\
-    time (s):    {time}                              \n\
-    kappa:       {self.kappa}                        \n\
-    Original:    {self.label} {self.str}             \n\
-    Delta:       {self.delta_label} {self.delta_str} \n\
-    Adversarial: {self.adv_label} {self.adv_str}     \n"
+                 [INFO]\n\
+                 id:          {self.id}                           \n\
+                 mode:        {self.mode}                         \n\
+                 time (s):    {time}                              \n\
+                 kappa:       {self.kappa}                        \n\
+                 Original:    {self.label} {self.str}             \n\
+                 Delta:       {self.delta_label} {self.delta_str} \n\
+                 Adversarial: {self.adv_label} {self.adv_str}     \n"
         print(INFO)
 
-    def store_images(s):
+    def store_images(self):
         """Store images to s.store directory."""
-        suffix = f"id{s.id}_Orig{s.label}_Adv{s.adv_label}_Delta{s.delta_label}"
-        save = f"{s.store}/{s.mode}_ID{s.id}_Gamma_{s.gamma}_Kappa_{s.kappa}"
+        suffix = f"id{self.id}_Orig{self.label}_Adv{self.adv_label}_Delta{self.delta_label}"
+        save = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}_Kappa_{self.kappa}"
         os.system(f"mkdir -p {save}")
 
-        s.img_pic = util.save_img(s.img, f"{save}/Orig_{s.label}")
-        s.delta_pic = util.save_img(s.delta, f"{save}/Delta_{suffix}", s.mode)
-        s.adv_pic = util.save_img(s.img, f"{save}/Adv_{suffix}", s.mode, mode_img=s.delta)
+        self.img_pic = util.save_img(self.img, f"{save}/Orig_{self.label}")
+        self.delta_pic = util.save_img(self.delta, f"{save}/Delta_{suffix}", self.mode)
+        self.adv_pic = util.save_img(self.img, f"{save}/Adv_{suffix}", self.mode, mode_img=self.delta)
 
     def show_images(self, w=18.5, h=10.5):
         """Show img, delta and adv next to each other."""
