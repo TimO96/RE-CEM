@@ -10,6 +10,7 @@ import fista
 import evaluation
 from polynomial_decay import poly_lr_scheduler
 
+
 class CEM:
     def __init__(self, model, mode, AE, lr_init, c_init, c_steps,
                  max_iterations, kappa, beta, gamma, report):
