@@ -1,15 +1,16 @@
-## fista.py -- fast iterative shrinkage thresholding algorithm
+## fista.py -- Fast Iterative Shrinkage Thresholding Algorithm
 ##
 ## (C) 2020 UvA FACT AI group
 
-import torch
-from torch import tensor
+from torch import max as tmax
+from torch import min as tmin
+from torch import abs as tabs
 
-def fista(label, beta, step, delta, slack, orig_img):
+def fista(mode, beta, step, delta, slack, orig_img):
     """
     Fast Iterative Shrinkage-Thresholding Algorithm.
     Input:
-        - label    : label for orig_img
+        - mode     : mode for analysis
         - beta     : regularization coefficient (hyperparameter)
         - step     : k
         - delta    : last perturbation
@@ -19,30 +20,33 @@ def fista(label, beta, step, delta, slack, orig_img):
         - delta_update : new perturbation
         - slack_update : new slack vector
     """
-    # Delta Update.
+
+    # Delta update.
     z = slack - orig_img
+
     HALF = tensor(0.5).to(z.device)
-    delta_update = (z > beta) * torch.min((slack - beta), HALF) + \
-                   (torch.abs(z) <= beta) * orig_img + \
-                   (z < -beta) * torch.max((slack + beta), -HALF)
 
-    delta_update = update(delta_update, orig_img, label)
+    # Apply FISTA conditions.
+    delta_update = (z > beta) * tmin((slack - beta), HALF) + \
+                   (tabs(z) <= beta) * orig_img + \
+                   (z < -beta) * tmax((slack + beta), -HALF)
 
-    # Slack update.
-    zt = step / (step + torch.tensor(3))
+    # Apply delta update (delta^(k+1)).
+    delta_update = update(delta_update, orig_img, mode)
+
+    # Apply slack update (y^(k+1)) for momentum acceleration.
+    zt = step / (step + tensor(3))
     slack_update = delta_update + zt * (delta_update - delta)
-    slack_update = update(slack_update, orig_img, label)
+    slack_update = update(slack_update, orig_img, mode)
 
     return delta_update, slack_update
 
 def update(variable, orig_img, mode):
-    """Update a variable based on label and its difference with orig_img."""
+    """Update a variable based on mode and its difference with orig_img."""
+
+    # Apply the shrinkage-thresholding update element-wise.
     z = variable - orig_img
-    # print(z.device, variable.device, orig_img.device)
     if mode == "PP":
         return (z <= 0) * variable + (z > 0) * orig_img
     elif mode == "PN":
         return (z > 0) * variable + (z <= 0) * orig_img
-
-    # When label is unknown.
-    return None
