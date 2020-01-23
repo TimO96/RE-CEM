@@ -1,7 +1,13 @@
 ## CEM.py -- Constrastive Explanation Method class in which adversarial
 ##           attacks are performed to analyze the target pertinent instance.
-##
-## (C) 2020 UvA FACT AI group
+
+## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
+## Based on:
+## Copyright (C) 2018, IBM Corp
+##                     Chun-Chen Tu <timtu@umich.edu>
+##                     PaiShun Ting <paishun@umich.edu>
+##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 import sys
 from torch import argmax, zeros, no_grad
@@ -90,6 +96,8 @@ class CEM:
             orig_img = imgs.clone()
             adv_img = imgs.clone().fill_(0)
             adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
+            #adv_img = imgs.clone()
+            #adv_img_slack = imgs.clone().requires_grad_(True)
 
             # Initialize optimizer.
             optimizer = SGD(params=[adv_img_slack], lr=self.lr_init)

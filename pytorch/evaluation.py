@@ -1,7 +1,13 @@
 ## evaluation.py -- objective function which combines the loss of the
 ##                  autoencoder with a elastic net regularizer.
-##
-## (C) 2020 UvA FACT AI group
+
+## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
+## Based on:
+## Copyright (C) 2018, IBM Corp
+##                     Chun-Chen Tu <timtu@umich.edu>
+##                     PaiShun Ting <paishun@umich.edu>
+##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 from torch import tensor, sum, abs, max
 
@@ -62,8 +68,8 @@ def loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
     if not to_optimize:
          loss += loss_L1 * beta
 
-    return loss, elastic_dist, pred, c_loss_attack, loss_L2, loss_L1, lab_score, \
-           nonlab_score
+    return loss, elastic_dist, pred, c_loss_attack, loss_L2, loss_L1, \
+           lab_score, nonlab_score
 
 def loss_function(mode, pred, target_lab, kappa, c_start):
     """

@@ -1,10 +1,14 @@
 ## fista.py -- Fast Iterative Shrinkage Thresholding Algorithm
-##
-## (C) 2020 UvA FACT AI group
 
-from torch import max as tmax
-from torch import min as tmin
-from torch import abs as tabs
+## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
+## Based on:
+## Copyright (C) 2018, IBM Corp
+##                     Chun-Chen Tu <timtu@umich.edu>
+##                     PaiShun Ting <paishun@umich.edu>
+##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+
+from torch import max, min, abs, tensor
 
 def fista(mode, beta, step, delta, slack, orig_img):
     """
@@ -27,9 +31,9 @@ def fista(mode, beta, step, delta, slack, orig_img):
     HALF = tensor(0.5).to(z.device)
 
     # Apply FISTA conditions.
-    delta_update = (z > beta) * tmin((slack - beta), HALF) + \
-                   (tabs(z) <= beta) * orig_img + \
-                   (z < -beta) * tmax((slack + beta), -HALF)
+    delta_update = (z > beta) * min((slack - beta), HALF) + \
+                   (abs(z) <= beta) * orig_img + \
+                   (z < -beta) * max((slack + beta), -HALF)
 
     # Apply delta update (delta^(k+1)).
     delta_update = update(delta_update, orig_img, mode)

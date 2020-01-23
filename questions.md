@@ -94,4 +94,5 @@ results should be in separated`
 # Questions 24/01
 - Thresholding the result images?
 - Inits with zeroes works, with images doesn't
+- Different parameter choices already discuss in Experimental Setup (i.e. c_start 10.0 in our code, 1.0 in their paper)
 - 333 hours of runtime seems pretty impossible
