@@ -1,7 +1,13 @@
 ## CEM.py -- Constrastive Explanation Method class in which adversarial
 ##           attacks are performed to analyze the target pertinent instance.
-##
-## (C) 2020 UvA FACT AI group
+
+## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
+## Based on:
+## Copyright (C) 2018, IBM Corp
+##                     Chun-Chen Tu <timtu@umich.edu>
+##                     PaiShun Ting <paishun@umich.edu>
+##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 import sys
 from torch import argmax, zeros, no_grad

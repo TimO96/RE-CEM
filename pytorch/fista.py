@@ -1,10 +1,14 @@
 ## fista.py -- Fast Iterative Shrinkage Thresholding Algorithm
-##
-## (C) 2020 UvA FACT AI group
 
-from torch import max as tmax
-from torch import min as tmin
-from torch import abs as tabs
+## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
+## Based on:
+## Copyright (C) 2018, IBM Corp
+##                     Chun-Chen Tu <timtu@umich.edu>
+##                     PaiShun Ting <paishun@umich.edu>
+##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+
+from torch import max, min, abs
 
 def fista(mode, beta, step, delta, slack, orig_img):
     """
@@ -43,7 +47,7 @@ def fista(mode, beta, step, delta, slack, orig_img):
 
 def update(variable, orig_img, mode):
     """Update a variable based on mode and its difference with orig_img."""
-
+    
     # Apply the shrinkage-thresholding update element-wise.
     z = variable - orig_img
     if mode == "PP":
