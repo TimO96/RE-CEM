@@ -107,7 +107,6 @@ class MNISTModel(Module):
         self.output56 = 200
         self.output_flat = 1024
 
-        manual_seed(0)
 
         self.cv1 = Conv2d(self.num_channels, self.output12, self.kernel_size)
         self.act1 = ReLU()
@@ -120,6 +119,7 @@ class MNISTModel(Module):
         self.cv4 = Conv2d(self.output34, self.output34, self.kernel_size)
         self.act4 = ReLU()
         self.max2 = MaxPool2d(self.pool_kernel_size)
+        self.fl = Flatten()
         #
         self.fc1 = Linear(self.output_flat, self.output56)
         self.act5 = ReLU()
@@ -149,12 +149,12 @@ class MNISTModel(Module):
         out = self.act3(self.cv3(out))
         out = self.act4(self.cv4(out))
         out = self.max2(out)
-        out = out.view(-1, 1024)
+        #out = out.view(-1, 1024)
+        out = self.fl(out)
         out2 = out
         out = self.act5(self.fc1(out))
         out = self.act6(self.fc2(out))
         out = self.fc3(out)
-
         return self.fc1(out2)
 
     def forward(self, data):

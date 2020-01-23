@@ -3,7 +3,8 @@
 ##
 ## (C) 2020 UvA FACT AI group
 
-import torch
+from torch import tensor, sum, abs, max
+
 
 def loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
          to_optimize=True):
@@ -27,34 +28,41 @@ def loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
         - computed loss between the most probable class and the most probable
           class given the pertubation (delta)
     """
+
+    # Compute delta.
     delta = orig_img - adv
 
     # Distance to the input data.
-    loss_L2, loss_L1 = torch.sum(delta**2), torch.sum(torch.abs(delta))
+    loss_L2, loss_L1 = sum(delta**2), sum(abs(delta))
     elastic_dist = loss_L2 + loss_L1 * beta
 
-    # Calculate the total loss for the adversarial attack.
+    # Compute the total loss for the adversarial attack.
     input = delta if (mode == "PP") else adv
 
     # Prediction before softmax of the model.
     pred = model.predict(input.unsqueeze(0))[0]
 
+    # Compute g(delta) which is the loss without the regularizers.
     loss_attack, lab_score, nonlab_score = loss_function(mode, pred, lab, kappa,
                                                          c_start)
+
+    # Scale the current current c parameter with loss function f and sum to
+    # retrieve a scalar.
+    c_loss_attack = sum(c_start * loss_attack)
 
     # Based on the mode compute the last term of the objective function which
     # is the L2 reconstruction error of the autoencoder.
     loss_AE = gamma
     if gamma:
-        loss_AE *= torch.sum((AE(input.unsqueeze(0))[0] - input)**2)
+        loss_AE *= sum((AE(input.unsqueeze(0))[0] - input)**2)
 
     # Determine whether the L1 loss term should be added when FISTA is not
     # optimized.
-    loss = loss_attack + loss_AE + loss_L2
+    loss = c_loss_attack + loss_AE + loss_L2
     if not to_optimize:
          loss += loss_L1 * beta
 
-    return loss, elastic_dist, pred, loss_attack, loss_L2, loss_L1, lab_score, \
+    return loss, elastic_dist, pred, c_loss_attack, loss_L2, loss_L1, lab_score, \
            nonlab_score
 
 def loss_function(mode, pred, target_lab, kappa, c_start):
@@ -72,14 +80,19 @@ def loss_function(mode, pred, target_lab, kappa, c_start):
         - computed loss between the most probable class and the most probable
           class given the pertubation (delta) without regularizers.
     """
-    # Compute the probability of the label class versus the maximum others.
-    lab_score = torch.sum((target_lab) * pred)
-    max_nonlab_score = torch.max(pred[(1-target_lab).bool()])
 
+    # Compute the probability of the label class versus the other classes and
+    # find the maximum in order to minimize the loss.
+    lab_score = sum((target_lab) * pred)
+    max_nonlab_score = max(pred[(1-target_lab).bool()])
+
+    # Dependent on the mode subtract the score.
     if mode == "PP":
         f = max_nonlab_score - lab_score
     elif mode == "PN":
         f = lab_score - max_nonlab_score
-    loss_attack = torch.max(torch.tensor([0.], device=pred.device), kappa + f)
 
-    return torch.sum(c_start * loss_attack), lab_score, max_nonlab_score
+    # Threshold the loss function f with a confidence parameter kappa.
+    loss_attack = max(tensor([0.], device=pred.device), kappa + f)
+
+    return loss_attack, lab_score, max_nonlab_score
