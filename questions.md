@@ -94,3 +94,4 @@ results should be in separated`
 # Questions 24/01
 - Thresholding the result images?
 - Inits with zeroes works, with images doesn't
+- 333 hours of runtime seems pretty impossible
