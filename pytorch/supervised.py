@@ -13,12 +13,13 @@ import argparse
 class Dataset:
     def __init__(self, data, model, device='cuda:0', seed=None):
         """Initialize a dataset."""
+
         self.data  = data
         self.name  = data.type + "_" + model.__class__.__name__
         self.model = model.to(device)
         self.device = device
 
-        # Seeding
+        # Set Pytorch seeds for reproducibility.
         if seed is not None:
             manual_seed(seed)
             if cuda.is_available():
@@ -28,6 +29,7 @@ class Dataset:
     def train(self, epochs=150, optim=Adam, criterion=CrossEntropyLoss(),
               stats=0, batch=128, optim_params={'lr':0.001}):
         """Train model with data."""
+
         optimizer = optim(self.model.parameters(), **optim_params)
 
         for e in range(epochs):
@@ -36,6 +38,7 @@ class Dataset:
             batch_start, batch_end = 0, batch
 
             while batch_start < len(X):
+                
                 # Prepare new batch.
                 input = X[batch_start:batch_end]
                 labels = r[batch_start:batch_end]
