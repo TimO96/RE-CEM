@@ -24,7 +24,7 @@ from CEM import CEM
 
 class Main:
     def __init__(self, mode="PN", max_iter=10, kappa=10, beta=1e-1, gamma=100,
-                 data=MNIST, nn='MNIST_MNISTModel.pt', ae='MNIST_AE.pt',
+                 data=MNIST, nn='MNISTModel.pt', ae='AE.pt', type='MNIST',
                  c_steps=9, c_init=10., lr_init=1e-2, seed=None, report=True,
                  model_dir='models/', store_dir='results/'):
         """Initializing the main CEM attack module.
@@ -37,6 +37,7 @@ class Main:
             - data      : dataloader to read images from
             - nn        : model ('black box' classifier)
             - ae        : autoencoder trained on data
+            - type      : dataset type ("MNIST" or "FMNIST")
             - c_steps   : amount of times to changes loss constant
             - c_init    : initial loss constant
             - lr_init   : initial learning rate of SGD
@@ -44,21 +45,22 @@ class Main:
             - report    : print interations
             - model_dir : directory where models are stored
             - store_dir : directory to store images
+            - darg      : optional arguments for data
         Returns:
             - a MAIN object instance
         """
-
         # Initialize CPU/GPU device and set seed for reproducibility.
         dvc = 'cuda:0' if cuda.is_available() else 'cpu'
         self.dvc = dvc
         self.set_seed(seed)
 
         # Load autoencoder and the CNN for the MNIST dataset.
-        self.ae = util.AE(load(model_dir+ae, map_location=dvc)).to(dvc)
-        self.nn = MNISTModel(load(model_dir+nn, map_location=dvc)).to(dvc)
+        type_dir = model_dir + type + '_'
+        self.ae = util.AE(load(type_dir+ae, map_location=dvc)).to(dvc)
+        self.nn = MNISTModel(load(type_dir+nn, map_location=dvc)).to(dvc)
 
         # Initialize dataset and class variables.
-        self.data = data(dvc)
+        self.data = data(dvc, type)
         self.mode = mode
         self.kappa = kappa
         self.gamma = gamma
@@ -84,7 +86,6 @@ class Main:
         Load an image with id and retrieve ground truth label from
         the black box model f self.nn.
         """
-
         self.id = id
         image = self.data.test_data[id]
         self.pred, self.label, self.str = self.prediction(image)
@@ -97,7 +98,6 @@ class Main:
 
     def attack(self):
         """Perform the attack."""
-
         # Create adversarial image from original image.
         self.adv = self.cem.attack(self.img, self.target).detach()
         delta = self.img - self.adv
@@ -111,7 +111,6 @@ class Main:
 
     def report(self):
         """Print report."""
-
         try:
             time = round(self.end - self.start, 1)
         except:
@@ -127,10 +126,10 @@ class Main:
         Delta:       {self.delta_label} {self.delta_str} \n\
         Adversarial: {self.adv_label} {self.adv_str}     \n"
         print(INFO)
+        # sys.stdout.flush()
 
     def store_images(s):
         """Store images to s.store directory."""
-
         sfx = f"id{s.id}_Orig{s.label}_Adv{s.adv_label}_Delta{s.delta_label}"
         dir = f"{s.store}/{s.mode}_ID{s.id}_Gamma_{s.gamma}_Kappa_{s.kappa}"
         os.system(f"mkdir -p {dir}")
@@ -141,7 +140,6 @@ class Main:
 
     def show_images(self, w=18.5, h=10.5):
         """Show img, delta and adv next to each other."""
-
         f, ax = plt.subplots(1,3)
         f.set_size_inches(w, h)
         ax[0].imshow(self.img_pic, cmap='gray', vmin=0, vmax=255)
@@ -151,7 +149,6 @@ class Main:
 
     def summary(self):
         """Print information on structure of the model and the autoencoder."""
-
         shape = (self.ae.image_size, self.ae.image_size, self.ae.num_channels)
         print(str(self.ae))
         summary(self.ae, shape)
@@ -160,7 +157,6 @@ class Main:
 
     def run(self, id=2952, show=True):
         """Run the algorithm for specific image."""
-
         self.start = time.time()
         self.set_image(id)
         self.attack()

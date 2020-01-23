@@ -127,7 +127,7 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
     return ae
 
 def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
-             thres=10, intensity=None):
+             thres=0, intensity=None):
     """Save an MNIST image to location name, both as .pt and .png."""
 
     # Save image tensor.

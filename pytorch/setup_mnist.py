@@ -19,18 +19,21 @@ from torchsummary import summary
 
 
 class MNIST:
-    def __init__(self, device='cpu', force=False):
+    def __init__(self, dvc='cpu', type='MNIST', force=False):
         """Load MNIST dataset, optionally force to download and overwrite."""
-
         # Create storage room.
+        self.type = type
         self.force = force
-        self.dir = "data"
+        self.dir = "data" + '/' + type
         if not os.path.exists(self.dir):
             os.mkdir(self.dir)
             self.force = True
 
         # Retrieve MNIST files locally.
-        self.mnist_url = "http://yann.lecun.com/exdb/mnist/"
+        self.url = "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
+        if type == 'MNIST':
+            self.url = "http://yann.lecun.com/exdb/mnist/"
+
         n_train = 60000
         n_test  = 10000
         train_x_path = self.fetch("train-images-idx3-ubyte.gz")
@@ -38,19 +41,14 @@ class MNIST:
         test_x_path = self.fetch("t10k-images-idx3-ubyte.gz")
         test_r_path = self.fetch("t10k-labels-idx1-ubyte.gz")
 
-        # Extract train data.
-        self.train_data = MNIST.extract_data(train_x_path, n_train).to(device)
-        self.train_labels = MNIST.extract_labels(train_r_path, n_train)\
-                                                 .to(device)
-
-        # Extract test data.
-        self.test_data = MNIST.extract_data(test_x_path, n_test).to(device)
-        self.test_labels = MNIST.extract_labels(test_r_path, n_test).to(device)
-
+        # Extract train and test data.
+        self.train_data = MNIST.extract_data(train_x_path, n_train).to(dvc)
+        self.train_labels = MNIST.extract_labels(train_r_path, n_train).to(dvc)
+        self.test_data = MNIST.extract_data(test_x_path, n_test).to(dvc)
+        self.test_labels = MNIST.extract_labels(test_r_path, n_test).to(dvc)
 
     def fetch(self, file):
         """Get file from self.url if not already present locally."""
-
         path = self.dir+"/"+file
         if self.force or not os.path.exists(path):
             urllib.request.urlretrieve(self.mnist_url+file, path)
@@ -59,7 +57,6 @@ class MNIST:
 
     def extract_data(filename, num_images, img_size=28):
         """Read MNIST image file as pytorch tensor."""
-
         with gzip.open(filename) as bytestream:
             bytestream.read(16)
             buf = bytestream.read(num_images*img_size*img_size)
@@ -73,7 +70,6 @@ class MNIST:
 
     def extract_labels(filename, num_images):
         """Read MNIST label file as pytorch tensor."""
-
         with gzip.open(filename) as bytestream:
             bytestream.read(8)
             buf = bytestream.read(1 * num_images)
@@ -89,7 +85,6 @@ class MNISTModel(Module):
         - restore: supply a loaded Pytorch state dict to reload weights
         - use_log: bool: output log probability for attack
         """
-
         super(MNISTModel, self).__init__()
 
         self.num_channels = 1
@@ -141,7 +136,6 @@ class MNISTModel(Module):
         """
         Predict output of MNISTModel for input data (batch, dim1, dim2, c).
         """
-
         assert data[0].shape == (28, 28, 1), "Expected shape (28, 28, 1)."
 
         # Reshape data for batch size, expect (batch, channel, dim1, dim2)
@@ -149,5 +143,4 @@ class MNISTModel(Module):
 
     def forward(self, data):
         """Predict alias."""
-
         return self.predict(data)

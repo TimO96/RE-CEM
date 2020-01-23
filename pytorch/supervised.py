@@ -14,7 +14,7 @@ class Dataset:
     def __init__(self, data, model, device='cuda:0', seed=None):
         """Initialize a dataset."""
         self.data  = data
-        self.name  = data.__class__.__name__ + "_" + model.__class__.__name__
+        self.name  = data.type + "_" + model.__class__.__name__
         self.model = model.to(device)
         self.device = device
 
@@ -106,7 +106,7 @@ def search(dset):
     opts = [Adam, Adagrad]
     for opt in opts:
         for lr in [0.01, 0.001]:
-            for b in [32, 64, 100, 128]:
+            for b in [32, 64, 100, 128, 256]:
                 print(opt, lr, b)
                 for seed in [10, 82, 43, 398, 112]:
                     train_model(dset, seed, batch=b, epochs=150, optim=opt,
@@ -116,8 +116,8 @@ def train_model(dset, seed=None, **kwargs):
     """Train a specific dataset."""
     device = 'cuda:0' if cuda.is_available() else 'cpu'
 
-    if dset == 'MNIST':
-        dataset = Dataset(MNIST(device), MNISTModel(), device, seed=seed)
+    if dset == 'MNIST' or dset == 'FMNIST':
+        dataset = Dataset(MNIST(device, dset), MNISTModel(), device, seed=seed)
     else:
         raise ModuleNotFoundError(f"Unsupported dataset {d}")
 
@@ -134,4 +134,4 @@ if __name__ == "__main__":
     if args['search']:
         search(args['dataset'])
     else:
-        train_model(args['dataset'], batch=128)
+        train_model(args['dataset'], batch=128, stats=1000, epochs=3)
