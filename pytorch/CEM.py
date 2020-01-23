@@ -89,6 +89,8 @@ class CEM:
             orig_img = imgs.clone()
             adv_img = imgs.clone().fill_(0)
             adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
+            #adv_img = imgs.clone()
+            #adv_img_slack = imgs.clone().requires_grad_(True)
 
             # Initialize optimizer.
             optimizer = SGD(params=[adv_img_slack], lr=self.lr_init)
