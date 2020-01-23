@@ -23,6 +23,8 @@ with tf.Session() as sess:
     cnn.model2.layers[5].set_weights([weights[4], weights[5]])
     cnn.model2.layers[7].set_weights([weights[6], weights[7]])
     cnn.model2.layers[11].set_weights([weights[8], weights[9]])
+
+    #cnn.model3.layers[0].set_weights([weights[8], weights[9]])
     dict_weights = {}
     for layer in cnn.model.layers:
         dict_weights[layer.get_config()['name']] = layer.get_weights()
@@ -39,14 +41,15 @@ with tf.Session() as sess:
 
 
 from torch import load, from_numpy, tensor, float32, flip, rot90
+import torch
 # from utils import h5_to_state_dict
 from torchsummary import summary
 
-os.chdir("../Testing")
-sys.path.append("../Testing")
+
 from test_setup_mnist import MNIST, MNISTModel
 
 cnn2 = MNISTModel()
+
 
 
 cnn2.cv1.weight.data = tensor(weights[0].transpose(3, 2, 0, 1), dtype=float32)
@@ -65,16 +68,23 @@ cnn2.fc3.weight.data=tensor(weights[12].T, dtype=float32)
 cnn2.fc3.bias.data=tensor(weights[13], dtype=float32)
 
 
-
 #pred2 = cnn2.predict(from_numpy(mnist.test_data[:100])).argmax(dim=1)
-pred2 = cnn2.predict(from_numpy(mnist.test_data[:1]))
+pred2 = cnn2.predict(tensor(mnist.test_data[:1]).float())
 
-pred2T = pred2.T
+from test_setup_mnist_tf import MNIST, MNISTModel
+
+
 print(pred1.shape)
+
 print(pred2.shape)
-print(pred2T.shape)
-print(tensor(pred1, dtype=float32) - pred2T)
-print(tensor(pred1, dtype=float32) - pred2)
-print((tensor(pred1, dtype=float32) - pred2).shape)
+print(pred1)
+print(pred2)
+
+torch.set_printoptions(threshold=10000)
+
+diff = pred1 - pred2
+print(diff)
+print(diff.shape)
+print(diff.sum())
 
 #acc = (pred2 == from_numpy(label)).float().mean()
