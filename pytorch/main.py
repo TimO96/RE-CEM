@@ -1,4 +1,4 @@
-## main.py -- implements Main class controlling all others.e
+## main.py -- Main class in which the code can be run from its functions.
 
 ## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
@@ -49,7 +49,7 @@ class Main:
         """
 
         # Initialize CPU/GPU device and set seed for reproducibility.
-        self.dvc = 'cuda:0' if cuda.is_available() else 'cpu'
+        dvc = 'cuda:0' if cuda.is_available() else 'cpu'
         self.set_seed(seed)
 
         # Load autoencoder and the CNN for the MNIST dataset.
@@ -63,6 +63,7 @@ class Main:
         self.gamma = gamma
         self.store = store_dir
         self.start, self.end = None, None
+        self.dvc = dvc
 
         # Intialize CEM class for attack and perform PP and PN analysis.
         self.cem = CEM(self.nn, mode, self.ae, lr_init=lr_init, c_init=c_init,
@@ -159,7 +160,7 @@ class Main:
 
     def run(self, id=2952, show=True):
         """Run the algorithm for specific image."""
-        
+
         self.start = time.time()
         self.set_image(id)
         self.attack()
@@ -169,8 +170,8 @@ class Main:
         if show:
             self.show_images()
 
-# pp = Main(mode='PP')
+pp = Main(mode='PP')
 # pn = Main(mode='PN')
 # pp.summary()
-# pp.run(1234)
+pp.run(1234)
 # pn.run(1234)

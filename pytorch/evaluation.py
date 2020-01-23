@@ -68,8 +68,8 @@ def loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
     if not to_optimize:
          loss += loss_L1 * beta
 
-    return loss, elastic_dist, pred, c_loss_attack, loss_L2, loss_L1, lab_score,
-           nonlab_score
+    return loss, elastic_dist, pred, c_loss_attack, loss_L2, loss_L1, \
+           lab_score, nonlab_score
 
 def loss_function(mode, pred, target_lab, kappa, c_start):
     """

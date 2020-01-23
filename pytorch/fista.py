@@ -8,7 +8,7 @@
 ##                     PaiShun Ting <paishun@umich.edu>
 ##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
-from torch import max, min, abs
+from torch import max, min, abs, tensor
 
 def fista(mode, beta, step, delta, slack, orig_img):
     """
@@ -31,9 +31,9 @@ def fista(mode, beta, step, delta, slack, orig_img):
     HALF = tensor(0.5).to(z.device)
 
     # Apply FISTA conditions.
-    delta_update = (z > beta) * tmin((slack - beta), HALF) + \
-                   (tabs(z) <= beta) * orig_img + \
-                   (z < -beta) * tmax((slack + beta), -HALF)
+    delta_update = (z > beta) * min((slack - beta), HALF) + \
+                   (abs(z) <= beta) * orig_img + \
+                   (z < -beta) * max((slack + beta), -HALF)
 
     # Apply delta update (delta^(k+1)).
     delta_update = update(delta_update, orig_img, mode)
@@ -47,7 +47,7 @@ def fista(mode, beta, step, delta, slack, orig_img):
 
 def update(variable, orig_img, mode):
     """Update a variable based on mode and its difference with orig_img."""
-    
+
     # Apply the shrinkage-thresholding update element-wise.
     z = variable - orig_img
     if mode == "PP":
