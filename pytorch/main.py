@@ -50,6 +50,7 @@ class Main:
 
         # Initialize CPU/GPU device and set seed for reproducibility.
         dvc = 'cuda:0' if cuda.is_available() else 'cpu'
+        self.dvc = dvc
         self.set_seed(seed)
 
         # Load autoencoder and the CNN for the MNIST dataset.
@@ -63,7 +64,6 @@ class Main:
         self.gamma = gamma
         self.store = store_dir
         self.start, self.end = None, None
-        self.dvc = dvc
 
         # Intialize CEM class for attack and perform PP and PN analysis.
         self.cem = CEM(self.nn, mode, self.ae, lr_init=lr_init, c_init=c_init,
@@ -170,8 +170,9 @@ class Main:
         if show:
             self.show_images()
 
-pp = Main(mode='PP')
-# pn = Main(mode='PN')
-# pp.summary()
-pp.run(1234)
-# pn.run(1234)
+if __name__ == "__main__":
+    pp = Main(mode='PP')
+    pn = Main(mode='PN')
+    pp.summary()
+    pp.run(1234)
+    pn.run(1234)

@@ -94,8 +94,8 @@ class CEM:
             # Set the image x_0 and x (x_0 + delta) and its slack type which
             # is to be optimized.
             orig_img = imgs.clone()
-            adv_img = imgs.clone().fill_(0)
-            adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
+            adv_img = imgs.clone().fill_(0.5)
+            adv_img_slack = imgs.clone().fill_(0.5).requires_grad_(True)
             #adv_img = imgs.clone()
             #adv_img_slack = imgs.clone().requires_grad_(True)
 
