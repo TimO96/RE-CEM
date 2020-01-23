@@ -94,10 +94,10 @@ class CEM:
             # Set the image x_0 and x (x_0 + delta) and its slack type which
             # is to be optimized.
             orig_img = imgs.clone()
-            adv_img = imgs.clone().fill_(0.5)
-            adv_img_slack = imgs.clone().fill_(0.5).requires_grad_(True)
-            #adv_img = imgs.clone()
-            #adv_img_slack = imgs.clone().requires_grad_(True)
+            # adv_img = imgs.clone().fill_(0)
+            # adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
+            adv_img = imgs.clone()
+            adv_img_slack = imgs.clone().requires_grad_(True)
 
             # Initialize optimizer.
             optimizer = SGD(params=[adv_img_slack], lr=self.lr_init)
@@ -106,8 +106,8 @@ class CEM:
             for iteration in range(self.max_iterations):
                 # perform the attack
                 optimizer.zero_grad()
-                optimizer = poly_lr_scheduler(optimizer, self.lr_init, \
-                                              iteration)
+                optimizer = poly_lr_scheduler(optimizer, self.lr_init,
+                    iteration, max_step=self.max_iterations, power=0.5)
 
                 # Compute the criterion which is used to optimize.
                 loss, _, _, _, _, _, _, _ = evaluation.loss(self.model,
