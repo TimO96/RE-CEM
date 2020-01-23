@@ -1,7 +1,13 @@
 ## CEM.py -- Constrastive Explanation Method class in which adversarial
 ##           attacks are performed to analyze the target pertinent instance.
-##
-## (C) 2020 UvA FACT AI group
+
+## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
+## Based on:
+## Copyright (C) 2018, IBM Corp
+##                     Chun-Chen Tu <timtu@umich.edu>
+##                     PaiShun Ting <paishun@umich.edu>
+##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 import sys
 from torch import argmax, zeros, no_grad
@@ -34,6 +40,7 @@ class CEM:
                                    function
             - report             : print iterations
         """
+
         # Define model variables.
         self.model = model
         self.mode = mode
@@ -159,8 +166,6 @@ class CEM:
             # If no proper solution is found: upscale the constant c value with
             # a factor of 10. Else interpolate between the boundary values.
             else:
-                # failure, either multiply by 10 if no solution found yet
-                #          or do binary search with the known upper bound
                 lower_bound = max(lower_bound, c_start)
                 if upper_bound < 1e9:
                     c_start = (lower_bound + upper_bound)/2

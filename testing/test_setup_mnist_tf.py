@@ -78,7 +78,11 @@ class MNISTModel:
         model2.add(Activation('relu'))
         model2.add(MaxPooling2D(pool_size=(2, 2)))
         model2.add(Flatten())
-        model2.add(Dense(200))
+        model2.add(Dense(200, input_dim=1024))
+
+        model3 = Sequential()
+        model3.add(Dense(200, activation='linear'))
+
 
         model = Sequential()
 
@@ -109,6 +113,9 @@ class MNISTModel:
 
         self.model = model
         self.model2 = model2
+        self.model3 = model3
 
-    def predict(self, data):
+    def predict(self, data, test=False):
+        if test:
+            return self.model3(data)
         return self.model2(data)

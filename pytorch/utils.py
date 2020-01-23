@@ -1,38 +1,29 @@
-## utils.py -- Some utility functions
-##
+## utils.py -- Initialization of autoencoder and various utility functions.
+
+## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+
+## Based on:
 ## Copyright (C) 2018, IBM Corp
 ##                     Chun-Chen Tu <timtu@umich.edu>
 ##                     PaiShun Ting <paishun@umich.edu>
 ##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
-##
-## Licensed under the Apache License, Version 2.0 (the "License");
-## you may not use this file except in compliance with the License.
-## You may obtain a copy of the License at
-##
-##     http://www.apache.org/licenses/LICENSE-2.0
-##
-## Unless required by applicable law or agreed to in writing, software
-## distributed under the License is distributed on an "AS IS" BASIS,
-## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-## See the License for the specific language governing permissions and
-## limitations under the License.
-
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
-
-from torch.nn import Module, Conv2d, LeakyReLU, MaxPool2d, Upsample, Sequential
-from torch import load, save, eye, uint8, from_numpy, argmax
-from torchsummary import summary
-from PIL import Image
 
 import os
 import h5py
 import numpy as np
 
+from torch.nn import Module, Conv2d, LeakyReLU, MaxPool2d, Upsample, Sequential
+from torch import load, save, eye, from_numpy, argmax
+from torchsummary import summary
+from PIL import Image
+
+
 class AE(Module):
     def __init__(self, restore=None):
         """
-        Autoencoder based on `mnist_AE_1_decoder.json`.
+        Autoencoder architecture based on mnist_AE_1_decoder.json.
         """
+
         super(AE, self).__init__()
 
         self.num_channels = 1
@@ -69,11 +60,13 @@ class AE(Module):
                    padding=self.padding),
         )
 
+        # Load pre-trained weights.
         if restore:
             self.load_state_dict(restore)
 
     def predict(self, data):
         """Predict output for input data (batch, dim1, dim2, c)."""
+
         assert data[0].shape == (28, 28, 1), "Expected shape (b, 28, 28, 1)."
 
         # Reshape data, expect (batch, channel, dim1, dim2)
@@ -85,24 +78,30 @@ class AE(Module):
 
     def forward(self, data):
         """Predict alias."""
+
         return self.predict(data)
+
 
 def h5_to_state_dict(h5_file, mapping):
     """Create Pytorch state_dict from h5 weight with mapping."""
+
     state_dict = {}
     with h5py.File(h5_file, 'r') as f:
         for h5, state in mapping.items():
+            # Weights in tensorflow are transposed with respect to Pytorch.
             state_dict[state] = from_numpy(f[h5][:].T)
+
     return state_dict
 
 def load_AE(codec_prefix, print_summary=False, dir="models/"):
-    """Load autoencoder from json. Optionally print summary"""
-    # Weight file
+    """Load autoencoder from json. Optionally print summary."""
+
+    # Weights file.
     weight_file = dir + codec_prefix  + ".h5"
     if not os.path.isfile(weight_file):
         raise Exception(f"Decoder weight file {weight_file} not found.")
 
-    # AE mapping
+    # AE mapping from keras format to Pytorch.
     AE_map = {
         'conv2d_4/conv2d_4/bias:0'       : 'decoder.0.bias',
         'conv2d_4/conv2d_4/kernel:0'     : 'decoder.0.weight',
@@ -118,25 +117,28 @@ def load_AE(codec_prefix, print_summary=False, dir="models/"):
         'sequential_1/conv2d_3/kernel:0' : 'encoder.5.weight',
     }
 
-    # Create AE
+    # Create autoencoder instance.
     ae = AE(h5_to_state_dict(weight_file, AE_map))
 
+    # Print autoencoder structure.
     if print_summary:
         summary(ae, (ae.image_size, ae.image_size, ae.num_channels))
 
     return ae
 
-def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True,
+def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
              thres=10, intensity=None):
     """Save an MNIST image to location name, both as .pt and .png."""
-    # Save tensor
+
+    # Save image tensor.
     if save_tensor:
         save(img, name+'.pt')
 
-    # Save image, invert MNIST read
+    # Save image, invert MNIST read.
     fig = np.around((img.cpu().data.numpy() + 0.5) * 255)
     fig = fig.astype(np.uint8).squeeze()
 
+    # Apply colors to indicate the PN and PP pixels.
     if channel:
         channel = 1 if (channel == 'PP') else 0
         nfig = np.zeros((3, *fig.shape)).astype(np.uint8)
@@ -165,15 +167,17 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=True,
         pic += overlay
         pic = Image.fromarray(pic)
 
-    # name = 'output'
+    # Name = 'output'
     pic.save(name+'.png')
+
     return pic
 
 def generate_data(data, id, target_label):
     """
     Return test data id and one hot target.
-    Expects data to be MNIST pytorch.
+    Expects data to be MNIST Pytorch.
     """
+
     inputs = data.test_data[id]
     targets = eye(data.test_labels.shape[1], device=inputs.device)[target_label]
 
@@ -184,40 +188,43 @@ def model_prediction(model, inputs):
     Make a prediction for model given inputs.
     Returns: raw output, predicted class and raw output as string.
     """
+
+    # Unsqueeze if input is still shaped for batched inputs.
     squeeze = len(inputs.shape) < 4
     if squeeze:
         inputs = inputs.unsqueeze(0)
 
+    # Retrieve model outut predictions in probabilities without activations.
     prob = model.predict(inputs)
     if squeeze:
         prob = prob[0]
 
+    # Retrieve predicted class.
     pred_class = argmax(prob, dim=-1).item()
+
+    # Pretty print of the output prediction.
     prob_str = space([round(x,1) for x in prob.tolist()], pred_class)
 
     return prob, pred_class, prob_str
 
 def space(list, best):
     """Pretty print a list, with coloured highest number."""
+
     liststr = '['
 
     for i, number in enumerate(list):
         num = ''
-
         # Negatives need extra space.
         if number > 0:
             num += ' '
-        # Nums betwen -10 and 10 need extra space
+        # Numbers between -10 and 10 need extra space
         if number < 10 and number > -10:
             num += ' '
         num += str(number)
 
-        # Color if best
+        # Highlight best scores in green color.
         if i == best:
             num = '\033[92m'+num+'\033[0m'
         liststr += num+', '
 
     return liststr[:-2] + ']'
-
-# Example
-# ae = load_AE('mnist_AE_weights', True)
