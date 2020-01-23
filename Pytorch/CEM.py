@@ -34,6 +34,7 @@ class CEM:
                                    function
             - report             : print iterations
         """
+        
         # Define model variables.
         self.model = model
         self.mode = mode
