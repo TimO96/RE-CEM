@@ -23,7 +23,7 @@ from CEM import CEM
 
 
 class Main:
-    def __init__(self, mode="PN", max_iter=10, kappa=10, beta=1e-1, gamma=100,
+    def __init__(self, mode="PN", max_iter=200, kappa=10, beta=1e-1, gamma=100,
                  data=MNIST, nn='MNISTModel.pt', ae='AE.pt', type='MNIST',
                  c_steps=9, c_init=10., lr_init=1e-2, seed=None, report=True,
                  model_dir='models/', store_dir='results/'):
@@ -167,8 +167,8 @@ class Main:
             self.show_images()
 
 if __name__ == "__main__":
-    pp = Main(mode='PP')
-    pn = Main(mode='PN')
+    pp = Main(mode='PP', gamma=0)
+    # pn = Main(mode='PN', gamma=0)
     pp.summary()
-    pp.run(1234)
-    pn.run(1234)
+    pp.run(12)
+    # pn.run(12)
