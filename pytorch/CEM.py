@@ -94,10 +94,10 @@ class CEM:
             # Set the image x_0 and x (x_0 + delta) and its slack type which
             # is to be optimized.
             orig_img = imgs.clone()
-            adv_img = imgs.clone().fill_(0)
-            adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
-            # adv_img = imgs.clone()
-            # adv_img_slack = imgs.clone().requires_grad_(True)
+            # adv_img = imgs.clone().fill_(0)
+            # adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
+            adv_img = imgs.clone()
+            adv_img_slack = imgs.clone().requires_grad_(True)
 
             # Initialize optimizer.
             optimizer = SGD(params=[adv_img_slack], lr=self.lr_init)
@@ -123,7 +123,7 @@ class CEM:
                 # This operation should not explicitly change the weights.
                 with no_grad():
                     adv_img, adv_img_slack_update = fista.fista(self.mode,
-                        self.beta, iteration, adv_img, adv_img_slack, orig_img)
+                        self.beta, iteration+1, adv_img, adv_img_slack, orig_img)
                     adv_img_slack.data = adv_img_slack_update.data
 
                 # Estimate the losses after the FISTA update without optimizing.

@@ -105,6 +105,8 @@ class CEM:
             # adv_img_slack = imgs.clone().fill_(0).requires_grad_(True)
             # adv_img = imgs.clone()
             # adv_img_slack = imgs.clone().requires_grad_(True)
+            import ipdb
+            # ipdb.set_trace()
 
             # Initialize optimizer.
             optimizer = SGD(params=[y], lr=self.lr_init)
@@ -115,16 +117,25 @@ class CEM:
                     lab = tsum(target * pred)
                     nonlab = tmax(pred[(1-target).bool()])
 
+
+
                     # print(lab, nonlab)
                     # print(nonlab-lab)
                     # print(-kappa)
+                    # ipdb.set_trace()
+
 
                     return tmax((nonlab - lab)+kappa, tensor(0.).to(dvc)), pred
                 elif mode == "PN":
                     pred = self.model.predict((x+delta).unsqueeze(0))[0]
                     lab = tsum(target * pred)
                     nonlab = tmax(pred[(1-target).bool()])
+
+                    # ipdb.set_trace()
+
+
                     return tmax((lab - nonlab)+kappa, tensor(0.).to(dvc)), pred
+
 
             def s(z, beta):
                 HALF = tensor(0.5).to(z.device)
@@ -160,12 +171,14 @@ class CEM:
                 g = c_start * f_lss + tsum(y**2)
                 g.backward()
                 optimizer.step()
+
+
                 # ny = optimizer.param_groups[0]['params'][0].detach()
 
                 to_project = s(y, self.beta)
                 new_delta = project(self.mode, to_project, x)
 
-                scale = iteration / (iteration + 3)
+                scale = (iteration+1) / (iteration + 4)
                 to_project2 = new_delta + scale * (new_delta - delta)
                 new_y = project(self.mode, to_project2, x)
                 # .requires_grad_(True)
@@ -199,7 +212,7 @@ class CEM:
                 #      self.AE, c_start, self.kappa, self.gamma, self.beta,
                 #      to_optimize=False)
 
-                if iteration%(self.max_iterations//10) == 0 and self.report:
+                if iteration%(self.max_iterations//100) == 0 and self.report:
                     print(f"iter: {iteration} const: {c_start}")
                     print(f"lss_k: {loss_EN}")
                     print(f"lss_attack {g}")
@@ -221,7 +234,7 @@ class CEM:
                     current_step_best_score = argmax(pred).item()
                 if loss_EN < overall_best_dist and comp:
                     overall_best_dist = loss_EN
-                    overall_best_attack = delta
+                    overall_best_attack = delta+x
 
 
             # Adjust the lower and upper bound based on the previously achieved
