@@ -1,14 +1,16 @@
-## setup_mnist.py -- MNIST data and model loading code.
-##
-## Copyright (C) 2016, Nicholas Carlini <nicholas@carlini.com>.
-##
-## This program is licenced under the BSD 2-Clause licence,
-## contained in the LICENCE file in this directory.
+# models.py -- MNIST data and model loading code to create model classes.
 
 # (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-from torch.nn import Sequential, Conv2d, LeakyReLU, MaxPool2d, Flatten, Linear,\
-                     Softmax, Module, Upsample
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+
+from torch.nn import Sequential, Conv2d, LeakyReLU, MaxPool2d, Flatten, \
+                     Linear, Softmax, Module, Upsample
+
 
 class AE(Module):
     def __init__(self, restore=None):
@@ -22,8 +24,8 @@ class AE(Module):
         self.image_size = 28
         self.num_labels = 10
 
-        self.kernel_size = (3,3)
-        self.pool_kernel_size = (2,2)
+        self.kernel_size = (3, 3)
+        self.pool_kernel_size = (2, 2)
         self.relu_slope = 0
         self.filter_size = 16
         self.padding = 1
@@ -73,6 +75,7 @@ class AE(Module):
 
         return self.predict(data)
 
+
 class MNISTModel(Module):
     def __init__(self, restore=None, use_log=False):
         """
@@ -88,8 +91,8 @@ class MNISTModel(Module):
         self.image_size = 28
         self.num_labels = 10
 
-        self.kernel_size = (3,3)
-        self.pool_kernel_size = (2,2)
+        self.kernel_size = (3, 3)
+        self.pool_kernel_size = (2, 2)
         self.relu_slope = 0
 
         self.output12 = 32
@@ -127,7 +130,6 @@ class MNISTModel(Module):
         # Load pre-trained weights.
         if restore:
             self.load_state_dict(restore)
-
 
     def predict(self, data):
         """

@@ -1,12 +1,12 @@
-## main.py -- Main class in which the code can be run from its functions.
+# main.py -- Main class in which the code can be run from its functions.
 
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-## Based on:
-## Copyright (C) 2018, IBM Corp
-##                     Chun-Chen Tu <timtu@umich.edu>
-##                     PaiShun Ting <paishun@umich.edu>
-##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 import os
 import random
@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 from torchsummary import summary
 from torch import cuda, manual_seed, load, abs
-from torch import abs as torchabs
 from torch.backends import cudnn
 
 from .models.models import MNISTModel, AE
@@ -50,7 +49,7 @@ class Main:
         self.set_seed(seed)
 
         # Load autoencoder and the CNN for the MNIST dataset.
-        type_dir = os.path.dirname(models.__file__) + '/'+ type + '_'
+        type_dir = os.path.dirname(models.__file__) + '/' + type + '_'
         self.ae = AE(load(type_dir+ae, map_location=dvc)).to(dvc)
         self.nn = MNISTModel(load(type_dir+nn, map_location=dvc)).to(dvc)
 
@@ -89,13 +88,15 @@ class Main:
         if mode is None:
             mode = self.mode
 
-        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode, **kwargs)
+        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode,
+                      **kwargs)
         explain.run(self.data, id)
 
+
 class CEM:
-    def __init__(self, nn, ae, dvc, mode="PN", max_iter=200, kappa=10, beta=1e-1, gamma=100,
-                  c_steps=9, c_init=10., lr_init=1e-2, report=True,
-                 store_dir='results/'):
+    def __init__(self, nn, ae, dvc, mode="PN", max_iter=200, kappa=10,
+                 beta=1e-1, gamma=100, c_steps=9, c_init=10., lr_init=1e-2,
+                 report=True, store_dir='results/'):
         """Initializing the main CEM attack module.
         Inputs:
             - max_iter  : maximum iterations running the attack
@@ -130,8 +131,8 @@ class CEM:
 
         # Intialize CEM class for attack and perform PP and PN analysis.
         self.cem = Attack(self.nn, self.ae, lr_init=lr_init, c_init=c_init,
-                          c_steps=c_steps, max_iterations=max_iter, kappa=kappa,
-                          beta=beta, gamma=gamma, report=report)
+                          c_steps=c_steps, max_iterations=max_iter,
+                          kappa=kappa, beta=beta, gamma=gamma, report=report)
 
     def set_image(self, data, id):
         """
@@ -157,8 +158,9 @@ class CEM:
 
         # Calculate probability classes for adversarial and delta image.
         self.adv_pred, self.adv_label, self.adv_str = self.prediction(self.adv)
-        self.delta_pred, self.delta_label, self.delta_str = \
-                                                          self.prediction(delta)
+        self.delta_pred, self.delta_label, \
+            self.delta_str = self.prediction(delta)
+
         # Perform appropriate scaling.
         self.delta = abs(delta) - 0.5
         self.end = time.time()
@@ -167,8 +169,9 @@ class CEM:
         """Print report."""
         try:
             time = round(self.end - self.start, 1)
-        except:
+        except Exception:
             time = 'None'
+            raise
 
         INFO = f"\n\
         [INFO]\n\
@@ -194,7 +197,7 @@ class CEM:
 
     def show_images(self, w=18.5, h=10.5):
         """Show img, delta and adv next to each other."""
-        f, ax = plt.subplots(1,3)
+        f, ax = plt.subplots(1, 3)
         f.set_size_inches(w, h)
         ax[0].imshow(self.img_pic, cmap='gray', vmin=0, vmax=255)
         ax[1].imshow(self.delta_pic)
@@ -209,6 +212,7 @@ class CEM:
         self.store_images()
         if show:
             self.show_images()
+
 
 if __name__ == "__main__":
     m = Main(mode='PP')
