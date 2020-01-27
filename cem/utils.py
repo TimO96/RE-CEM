@@ -19,12 +19,13 @@ def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
     """
     Polynomial decay of learning rate.
     Input:
-        - optimizer     : initial optimizer
-        - init_lr       : initial learning rate
-        - step          : current iteration
-        - lr_decay_step : how frequently decay occurs, default is 1
-        - max_step      : number of maximum iterations
-        - power         : polymomial power
+        - optimizer         : initial optimizer
+        - init_lr           : initial learning rate
+        - step              : current iteration
+        - end_learning_rate : terminal learning rate
+        - lr_decay_step     : how frequently decay occurs, default is 1
+        - max_step          : number of maximum iterations
+        - power             : polymomial power
     Returns:
         - updated optimizer
     """

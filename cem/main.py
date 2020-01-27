@@ -30,11 +30,11 @@ class Main:
         """
         Initialize the CEM controller.
             - type      : dataset type; MNIST or FMNIST
-            - mode      : search mode; "PN" or "PP"
-            - seed      : random seed
             - nn        : model ('black box' classifier)
             - ae        : autoencoder trained on data
             - model_dir : directory where models are stored
+            - mode      : search mode; "PN" or "PP"
+            - seed      : random seed
         """
         dvc = 'cuda:0' if cuda.is_available() else 'cpu'
         type = type.upper()
