@@ -1,19 +1,18 @@
-## utils.py -- Initialization of autoencoder and various utility functions.
+# utils.py -- Initialization of autoencoder and various utility functions.
 
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-## Based on:
-## Copyright (C) 2018, IBM Corp
-##                     Chun-Chen Tu <timtu@umich.edu>
-##                     PaiShun Ting <paishun@umich.edu>
-##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
-import os
-import h5py
 import numpy as np
 
 from torch import save, eye, argmax
 from PIL import Image
+
 
 def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
                       lr_decay_step=1, max_step=100000, power=1):
@@ -36,7 +35,7 @@ def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
 
     # Apply the polymomial decay scheduler on the learning rate.
     lr = (init_lr - end_learning_rate)*(1 - step/max_step)**power + \
-                                        end_learning_rate
+        end_learning_rate
 
     # Adjust the learning rate of the optimizer.
     for param_group in optimizer.param_groups:
@@ -44,8 +43,9 @@ def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
 
     return optimizer
 
-def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
-             thres=0, intensity=None):
+
+def save_img(img, name="output", channel=None, mode_img=None,
+             save_tensor=False, thres=0, intensity=None):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save image tensor.
     if save_tensor:
@@ -71,10 +71,10 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
 
             # Convert overlay to RGB.
             nfig[channel] = mode_img
-            overlay = nfig.transpose(1,2,0)
+            overlay = nfig.transpose(1, 2, 0)
         else:
             nfig[channel] = fig
-            fig = nfig.transpose(1,2,0)
+            fig = nfig.transpose(1, 2, 0)
 
     pic = Image.fromarray(fig)
 
@@ -89,15 +89,18 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
 
     return pic
 
+
 def generate_data(data, id, target_label):
     """
     Return test data id and one hot target.
     Expects data to be MNIST Pytorch.
     """
     inputs = data.test_data[id]
-    targets = eye(data.test_labels.shape[1], device=inputs.device)[target_label]
+    targets = eye(data.test_labels.shape[1],
+                  device=inputs.device)[target_label]
 
     return inputs, targets
+
 
 def model_prediction(model, inputs):
     """
@@ -118,9 +121,10 @@ def model_prediction(model, inputs):
     pred_class = argmax(prob, dim=-1).item()
 
     # Pretty print of the output prediction.
-    prob_str = space([round(x,1) for x in prob.tolist()], pred_class)
+    prob_str = space([round(x, 1) for x in prob.tolist()], pred_class)
 
     return prob, pred_class, prob_str
+
 
 def space(list, best):
     """Pretty print a list, with coloured highest number."""

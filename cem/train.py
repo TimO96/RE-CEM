@@ -1,4 +1,4 @@
-## (C) 2020 UvA FACT AI group
+# (C) 2020 UvA FACT AI group
 
 from argparse import ArgumentParser
 from os import system
@@ -8,17 +8,18 @@ from torch import argmax as targmax
 from torch import save, cuda, manual_seed
 from torch.optim import SGD, Adam, Adadelta, Adagrad
 from torch.nn import CrossEntropyLoss, MSELoss
-from torch.backends import cudn
+from torch.backends import cudnn
 
 from models.models import MNISTModel, AE
 from data.data import MNIST
+
 
 class Dataset:
     def __init__(self, data, model, unsupervised, device='cuda:0',
                  criterion=None, seed=None):
         """Initialize a dataset."""
-        self.data  = data
-        self.name  = data.type + "_" + model.__class__.__name__
+        self.data = data
+        self.name = data.type + "_" + model.__class__.__name__
         self.model = model.to(device)
         self.device = device
         self.supervised = not unsupervised
@@ -38,7 +39,7 @@ class Dataset:
                 cudnn.benchmark = False
 
     def train(self, epochs=150, optim=Adam, stats=0, batch=128,
-              optim_params={'lr':0.001}):
+              optim_params={'lr': 0.001}):
         """Train model with data."""
         optimizer = optim(self.model.parameters(), **optim_params)
 
@@ -67,7 +68,7 @@ class Dataset:
                 optimizer.step()
 
                 # Print stats.
-                if stats: # and batch_start % stats == 0:
+                if stats:  # and batch_start % stats == 0:
                     if self.supervised:
                         acc = Dataset.acc(targmax(preds, -1), labels)
                     else:
@@ -140,16 +141,18 @@ class Dataset:
         save(self.model.state_dict(), path)
         print(f'Stored to {path}')
 
+
 def search(dset, unsupervised):
     """Sort of grid search."""
-    opts = [Adam, Adagrad]
+    opts = [Adam, SGD, Adagrad, Adadelta]
     for opt in opts:
         for lr in [0.01, 0.001]:
             for b in [32, 64, 100, 128, 256]:
                 print(opt, lr, b)
                 for seed in [10, 82, 43, 398, 112]:
                     train_model(dset, unsupervised, seed, batch=b, epochs=150,
-                                optim=opt, optim_params={'lr':lr})
+                                optim=opt, optim_params={'lr': lr})
+
 
 def train_model(dset, unsupervised, seed=None, **kwargs):
     """Train a specific dataset."""
@@ -157,13 +160,15 @@ def train_model(dset, unsupervised, seed=None, **kwargs):
 
     if dset == 'MNIST' or dset == 'FMNIST':
         model = AE() if unsupervised else MNISTModel()
-        dataset = Dataset(MNIST(dvc, dset), model, unsupervised, dvc, seed=seed)
+        dataset = Dataset(MNIST(dvc, dset), model, unsupervised, dvc,
+                          seed=seed)
     else:
         raise ModuleNotFoundError(f"Unsupported dataset {d}")
 
     dataset.train(**kwargs)
     dataset.save_model()
     dataset.report_performance()
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
