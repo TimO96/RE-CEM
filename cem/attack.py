@@ -38,7 +38,7 @@ class Attack:
             - beta           : regularization weight for the L1 loss term
             - gamma          : regularization weight for autoencoder loss
                                function
-            - report          : print iterations
+            - report         : print iterations
         """
 
         # Define model variables.

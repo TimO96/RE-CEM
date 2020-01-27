@@ -87,7 +87,7 @@ class Dataset:
                 batch_end += batch
 
     def p_round(num):
-        """Round * 100, 2 dec"""
+        """Round * 100, 2 dec."""
         return round(num * 100, 2)
 
     def acc(preds, labels, round=True):
@@ -141,7 +141,7 @@ class Dataset:
         print(f"Test:  loss {tlss} acc {vacc}")
 
     def save_model(self, path=None, dir='models'):
-        """Store state dict"""
+        """Store state dict."""
         if path is None:
             system(f"mkdir -p {dir}")
             path = f'{dir}/{self.name}.pt'

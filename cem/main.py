@@ -22,20 +22,16 @@ from .data.data import MNIST
 from .attack import Attack
 from . import models
 from . import utils as util
-# import importlib.resources as r
 
 
 class Main:
     def __init__(self, type='MNIST', nn='MNISTModel.pt', ae='AE.pt',
                  model_dir='', mode=None, seed=None):
-        # pp = CEM(data, mode='PP', gamma=0)
-        # TODO Separate data from PN/PP config
-        # Make one class containing the data, (fixed type) have that class
-        # having a Method to execute PP/PN with params.
-        """Initialize the CEM controller.
-            - type : dataset type; MNIST or FMNIST
-            - mode : search mode; "PN" or "PP"
-            - seed : random seed
+        """
+        Initialize the CEM controller.
+            - type      : dataset type; MNIST or FMNIST
+            - mode      : search mode; "PN" or "PP"
+            - seed      : random seed
             - nn        : model ('black box' classifier)
             - ae        : autoencoder trained on data
             - model_dir : directory where models are stored
@@ -79,11 +75,11 @@ class Main:
         summary(self.nn, shape)
 
     def explain(self, id, mode=None, **kwargs):
-        """... .
-
+        """
+        Initialize a CEM class method and run the adversarial attack.
         Input:
-        - id        : dataset image id
-        - mode      : search mode; "PN" or "PP"
+            - id        : dataset image id
+            - mode      : search mode; "PN" or "PP"
         """
         if mode is None:
             mode = self.mode
@@ -97,8 +93,9 @@ class CEM:
     def __init__(self, nn, ae, dvc, mode="PN", max_iter=200, kappa=10,
                  beta=1e-1, gamma=100, c_steps=9, c_init=10., lr_init=1e-2,
                  report=True, store_dir='results/'):
-        """Initializing the main CEM attack module.
-        Inputs:
+        """
+        Initializing the main CEM attack module.
+        Input:
             - max_iter  : maximum iterations running the attack
             - kappa     : confidence distance between label en max_nonlabel
             - beta      : fista regularizer
@@ -115,9 +112,7 @@ class CEM:
             - a MAIN object instance
         """
         # Initialize CPU/GPU device and set seed for reproducibility.
-        # dvc = 'cuda:0' if cuda.is_available() else 'cpu'
         self.dvc = dvc
-        # self.set_seed(seed)
 
         # Initialize dataset and class variables.
         self.ae = ae
@@ -152,6 +147,7 @@ class CEM:
     def attack(self):
         """Perform the attack."""
         self.start = time.time()
+
         # Create adversarial image from original image.
         self.adv = self.cem.attack(self.img, self.target, self.mode).detach()
         delta = self.img - self.adv
