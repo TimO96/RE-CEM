@@ -15,24 +15,18 @@ import matplotlib.pyplot as plt
 
 from torchsummary import summary
 from torch import cuda, manual_seed, load, abs
-from torch import abs as torchabs
 from torch.backends import cudnn
+from torch import min, max
 
 from .models.models import MNISTModel, AE
 from .data.data import MNIST
 from .attack import Attack
 from . import models
 from . import utils as util
-# import importlib.resources as r
-
 
 class Main:
     def __init__(self, type='MNIST', nn='MNISTModel.pt', ae='AE.pt',
                  model_dir='', mode=None, seed=None):
-        # pp = CEM(data, mode='PP', gamma=0)
-        # TODO Separate data from PN/PP config
-        # Make one class containing the data, (fixed type) have that class
-        # having a Method to execute PP/PN with params.
         """Initialize the CEM controller.
             - type : dataset type; MNIST or FMNIST
             - mode : search mode; "PN" or "PP"
@@ -176,6 +170,7 @@ class CEM:
         mode:        {self.mode}                         \n\
         time (s):    {time}                              \n\
         kappa:       {self.kappa}                        \n\
+        gamma:       {self.gamma}                        \n\
         Original:    {self.label} {self.str}             \n\
         Delta:       {self.delta_label} {self.delta_str} \n\
         Adversarial: {self.adv_label} {self.adv_str}     \n"
