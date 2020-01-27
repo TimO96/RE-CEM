@@ -1,9 +1,9 @@
-## setup_mnist.py -- MNIST data and model loading code.
-##
-## Copyright (C) 2016, Nicholas Carlini <nicholas@carlini.com>.
-##
-## This program is licenced under the BSD 2-Clause licence,
-## contained in the LICENCE file in this directory.
+# data.py -- Prepare MNIST data and model loading code.
+#
+# Copyright (C) 2016, Nicholas Carlini <nicholas@carlini.com>.
+#
+# This program is licenced under the BSD 2-Clause licence,
+# contained in the LICENCE file in this directory.
 
 # (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
@@ -11,7 +11,8 @@ import numpy as np
 import os
 import gzip
 import urllib.request
-from torch import from_numpy, load
+from torch import from_numpy
+
 
 class MNIST:
     def __init__(self, dvc='cpu', type='MNIST', force=False):
@@ -26,14 +27,15 @@ class MNIST:
             self.force = True
 
         # Retrieve MNIST files locally.
-        self.url = "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
+        self.url = \
+            "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
         if type == 'MNIST':
             self.url = "http://yann.lecun.com/exdb/mnist/"
         elif type != 'FMNIST':
             raise f"Unkown dataset type {type}"
 
         n_train = 60000
-        n_test  = 10000
+        n_test = 10000
         train_x_path = self.fetch("train-images-idx3-ubyte.gz")
         train_r_path = self.fetch("train-labels-idx1-ubyte.gz")
         test_x_path = self.fetch("t10k-images-idx3-ubyte.gz")
@@ -75,4 +77,5 @@ class MNIST:
             bytestream.read(8)
             buf = bytestream.read(1 * num_images)
             labels = np.frombuffer(buf, dtype=np.uint8)
-        return from_numpy((np.arange(10) == labels[:, None]).astype(np.float32))
+        labels = (np.arange(10) == labels[:, None]).astype(np.float32)
+        return from_numpy(labels)

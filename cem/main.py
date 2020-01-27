@@ -1,12 +1,12 @@
-## main.py -- Main class in which the code can be run from its functions.
+# main.py -- Main class in which the code can be run from its functions.
 
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-## Based on:
-## Copyright (C) 2018, IBM Corp
-##                     Chun-Chen Tu <timtu@umich.edu>
-##                     PaiShun Ting <paishun@umich.edu>
-##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 import os
 import random
@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 from torchsummary import summary
 from torch import cuda, manual_seed, load, abs
-from torch import abs as torchabs
 from torch.backends import cudnn
 
 from .models.models import MNISTModel, AE
@@ -23,23 +22,19 @@ from .data.data import MNIST
 from .attack import Attack
 from . import models
 from . import utils as util
-# import importlib.resources as r
 
 
 class Main:
     def __init__(self, type='MNIST', nn='MNISTModel.pt', ae='AE.pt',
                  model_dir='', mode=None, seed=None):
-        # pp = CEM(data, mode='PP', gamma=0)
-        # TODO Separate data from PN/PP config
-        # Make one class containing the data, (fixed type) have that class
-        # having a Method to execute PP/PN with params.
-        """Initialize the CEM controller.
-            - type : dataset type; MNIST or FMNIST
-            - mode : search mode; "PN" or "PP"
-            - seed : random seed
+        """
+        Initialize the CEM controller.
+            - type      : dataset type; MNIST or FMNIST
             - nn        : model ('black box' classifier)
             - ae        : autoencoder trained on data
             - model_dir : directory where models are stored
+            - mode      : search mode; "PN" or "PP"
+            - seed      : random seed
         """
         dvc = 'cuda:0' if cuda.is_available() else 'cpu'
         type = type.upper()
@@ -50,7 +45,7 @@ class Main:
         self.set_seed(seed)
 
         # Load autoencoder and the CNN for the MNIST dataset.
-        type_dir = os.path.dirname(models.__file__) + '/'+ type + '_'
+        type_dir = os.path.dirname(models.__file__) + '/' + type + '_'
         self.ae = AE(load(type_dir+ae, map_location=dvc)).to(dvc)
         self.nn = MNISTModel(load(type_dir+nn, map_location=dvc)).to(dvc)
 
@@ -80,24 +75,27 @@ class Main:
         summary(self.nn, shape)
 
     def explain(self, id, mode=None, **kwargs):
-        """... .
-
+        """
+        Initialize a CEM class method and run the adversarial attack.
         Input:
-        - id        : dataset image id
-        - mode      : search mode; "PN" or "PP"
+            - id        : dataset image id
+            - mode      : search mode; "PN" or "PP"
         """
         if mode is None:
             mode = self.mode
 
-        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode, **kwargs)
+        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode,
+                      **kwargs)
         explain.run(self.data, id)
 
+
 class CEM:
-    def __init__(self, nn, ae, dvc, mode="PN", max_iter=200, kappa=10, beta=1e-1, gamma=100,
-                  c_steps=9, c_init=10., lr_init=1e-2, report=True,
-                 store_dir='results/'):
-        """Initializing the main CEM attack module.
-        Inputs:
+    def __init__(self, nn, ae, dvc, mode="PN", max_iter=200, kappa=10,
+                 beta=1e-1, gamma=100, c_steps=9, c_init=10., lr_init=1e-2,
+                 report=True, store_dir='results/'):
+        """
+        Initializing the main CEM attack module.
+        Input:
             - max_iter  : maximum iterations running the attack
             - kappa     : confidence distance between label en max_nonlabel
             - beta      : fista regularizer
@@ -114,9 +112,7 @@ class CEM:
             - a MAIN object instance
         """
         # Initialize CPU/GPU device and set seed for reproducibility.
-        # dvc = 'cuda:0' if cuda.is_available() else 'cpu'
         self.dvc = dvc
-        # self.set_seed(seed)
 
         # Initialize dataset and class variables.
         self.ae = ae
@@ -130,8 +126,8 @@ class CEM:
 
         # Intialize CEM class for attack and perform PP and PN analysis.
         self.cem = Attack(self.nn, self.ae, lr_init=lr_init, c_init=c_init,
-                          c_steps=c_steps, max_iterations=max_iter, kappa=kappa,
-                          beta=beta, gamma=gamma, report=report)
+                          c_steps=c_steps, max_iterations=max_iter,
+                          kappa=kappa, beta=beta, gamma=gamma, report=report)
 
     def set_image(self, data, id):
         """
@@ -151,14 +147,16 @@ class CEM:
     def attack(self):
         """Perform the attack."""
         self.start = time.time()
+
         # Create adversarial image from original image.
         self.adv = self.cem.attack(self.img, self.target, self.mode).detach()
         delta = self.img - self.adv
 
         # Calculate probability classes for adversarial and delta image.
         self.adv_pred, self.adv_label, self.adv_str = self.prediction(self.adv)
-        self.delta_pred, self.delta_label, self.delta_str = \
-                                                          self.prediction(delta)
+        self.delta_pred, self.delta_label, \
+            self.delta_str = self.prediction(delta)
+
         # Perform appropriate scaling.
         self.delta = abs(delta) - 0.5
         self.end = time.time()
@@ -167,8 +165,9 @@ class CEM:
         """Print report."""
         try:
             time = round(self.end - self.start, 1)
-        except:
+        except Exception:
             time = 'None'
+            raise
 
         INFO = f"\n\
         [INFO]\n\
@@ -194,7 +193,7 @@ class CEM:
 
     def show_images(self, w=18.5, h=10.5):
         """Show img, delta and adv next to each other."""
-        f, ax = plt.subplots(1,3)
+        f, ax = plt.subplots(1, 3)
         f.set_size_inches(w, h)
         ax[0].imshow(self.img_pic, cmap='gray', vmin=0, vmax=255)
         ax[1].imshow(self.delta_pic)
@@ -209,6 +208,7 @@ class CEM:
         self.store_images()
         if show:
             self.show_images()
+
 
 if __name__ == "__main__":
     m = Main(mode='PP')

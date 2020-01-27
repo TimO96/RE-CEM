@@ -1,19 +1,21 @@
-## evaluation.py -- objective function which combines the loss of the
-##                  autoencoder with a elastic net regularizer. Also implements
-##                  the Fast Iterative Shrinkage Thresholding Algorithm.
+# methods.py -- Calculate objective function which combines the loss of the
+#               autoencoder with a elastic net regularizer.
+#               Also implements the Fast Iterative
+#                Shrinkage-Thresholding Algorithm.
 
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-## Based on:
-## Copyright (C) 2018, IBM Corp
-##                     Chun-Chen Tu <timtu@umich.edu>
-##                     PaiShun Ting <paishun@umich.edu>
-##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 from torch import tensor, sum, abs, max, min
 
+
 def eval_loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
-         to_optimize=True):
+              to_optimize=True):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PP) or pertinent negatives (PN).
@@ -49,8 +51,8 @@ def eval_loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
     pred = model.predict(input.unsqueeze(0))[0]
 
     # Compute g(delta) which is the loss without the regularizers.
-    loss_attack, lab_score, nonlab_score = loss_function(mode, pred, lab, kappa,
-                                                         c_start)
+    loss_attack, lab_score, nonlab_score = loss_function(mode, pred, lab,
+                                                         kappa, c_start)
 
     # Scale the current current c parameter with loss function f and sum to
     # retrieve a scalar.
@@ -66,10 +68,11 @@ def eval_loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
     # optimized.
     loss = c_loss_attack + loss_AE + loss_L2
     if not to_optimize:
-         loss += loss_L1 * beta
+        loss += loss_L1 * beta
 
     return loss, elastic_dist, pred, c_loss_attack, loss_L2, loss_L1, \
-           lab_score, nonlab_score
+        lab_score, nonlab_score
+
 
 def loss_function(mode, pred, target_lab, kappa, c_start):
     """
@@ -102,6 +105,7 @@ def loss_function(mode, pred, target_lab, kappa, c_start):
     loss_attack = max(tensor([0.], device=pred.device), kappa + f)
 
     return loss_attack, lab_score, max_nonlab_score
+
 
 def fista(mode, beta, step, delta, slack, orig_img):
     """
@@ -137,6 +141,7 @@ def fista(mode, beta, step, delta, slack, orig_img):
     slack_update = update(slack_update, orig_img, mode)
 
     return delta_update, slack_update
+
 
 def update(variable, orig_img, mode):
     """Update a variable based on mode and its difference with orig_img."""
