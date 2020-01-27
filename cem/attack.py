@@ -1,13 +1,13 @@
-## CEM.py -- Constrastive Explanation Method class in which adversarial
-##           attacks are performed to analyze the target pertinent instance.
+# attack.py -- attack class in which adversarial attacks are performed to
+#              analyze the target pertinent instance.
 
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-## Based on:
-## Copyright (C) 2018, IBM Corp
-##                     Chun-Chen Tu <timtu@umich.edu>
-##                     PaiShun Ting <paishun@umich.edu>
-##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 import sys
 
@@ -17,6 +17,7 @@ from torch.optim import SGD
 from .methods import fista, eval_loss
 from .utils import poly_lr_scheduler
 
+
 class Attack:
     def __init__(self, model, AE, lr_init, c_init, c_steps, max_iterations,
                  kappa, beta, gamma, report):
@@ -25,19 +26,19 @@ class Attack:
         Moreover, CEM is used to perform adversarial attacks with the
         autoencoder.
         Input:
-            - model              : Pytorch NN prediction model
-            - AE                 : autoencoder model for the adversarial attacks
-            - lr_init            : starting learning rate for the optimizer
-            - c_init             : starting weight constant of the loss function
-            - c_steps            : number of iterations in which the constant c
-                                   is adjusted
-            - max_iterations     : maximum number of iterations for the analysis
-            - kappa              : confidence parameter to measure the distance
-                                   between target class and other classes
-            - beta               : regularization weight for the L1 loss term
-            - gamma              : regularization weight for autoencoder loss
-                                   function
-            - report             : print iterations
+            - model          : Pytorch NN prediction model
+            - AE             : autoencoder model for the adversarial attacks
+            - lr_init        : starting learning rate for the optimizer
+            - c_init         : starting weight constant of the loss function
+            - c_steps        : number of iterations in which the constant c
+                               is adjusted
+            - max_iterations : maximum number of iterations for the analysis
+            - kappa          : confidence parameter to measure the distance
+                               between target class and other classes
+            - beta           : regularization weight for the L1 loss term
+            - gamma          : regularization weight for autoencoder loss
+                               function
+            - report         : print iterations
         """
 
         # Define model variables.
@@ -109,7 +110,7 @@ class Attack:
             # Initialize optimizer.
             optimizer = SGD(params=[adv_img_slack], lr=self.lr_init)
 
-            # Iterate a given number of steps to find the best attack for each c
+            # Iterate given number of steps to find the best attack for each c.
             for iteration in range(self.max_iterations):
                 # perform the attack
                 optimizer.zero_grad()
@@ -119,8 +120,15 @@ class Attack:
 
                 # Compute the criterion which is used to optimize.
                 loss, _, _, _, _, _, _, _ = eval_loss(self.model,
-                    self.mode, orig_img, adv_img_slack, lab, self.AE, c_start,
-                    self.kappa, self.gamma, self.beta)
+                                                      self.mode,
+                                                      orig_img,
+                                                      adv_img_slack,
+                                                      lab,
+                                                      self.AE,
+                                                      c_start,
+                                                      self.kappa,
+                                                      self.gamma,
+                                                      self.beta)
 
                 # Apply gradients and update weights.
                 loss.backward()
@@ -130,23 +138,29 @@ class Attack:
                 # This operation should not explicitly change the weights.
                 with no_grad():
                     adv_img, adv_img_slack_update = fista(self.mode,
-                        self.beta, iteration+1, adv_img, adv_img_slack, orig_img)
+                                                          self.beta,
+                                                          iteration+1,
+                                                          adv_img,
+                                                          adv_img_slack,
+                                                          orig_img)
                     adv_img_slack.data = adv_img_slack_update.data
 
-                # Estimate the losses after the FISTA update without optimizing.
-                loss_no_opt, loss_EN, pred, loss_attack, loss_L2_dist, \
-                loss_L1_dist, target_score, nontarget_score = eval_loss(
-                     self.model, self.mode, orig_img, adv_img, lab,
-                     self.AE, c_start, self.kappa, self.gamma, self.beta,
-                     to_optimize=False)
+                # Estimate the loss after the FISTA update without optimizing.
+                loss_no_opt, loss_EN, pred, loss_attack, \
+                    loss_L2_dist, loss_L1_dist, target_score, \
+                    nontarget_score = eval_loss(self.model, self.mode,
+                                                orig_img, adv_img, lab,
+                                                self.AE, c_start, self.kappa,
+                                                self.gamma, self.beta,
+                                                to_optimize=False)
 
-                if iteration%(self.max_iterations//10) == 0 and self.report:
+                if iteration % (self.max_iterations//10) == 0 and self.report:
                     print(f"iter: {iteration} const: {c_start}")
-                    print("Loss_Overall:{:.3f}, Loss_Elastic:{:.3f}"\
+                    print("Loss_Overall:{:.3f}, Loss_Elastic:{:.3f}"
                           .format(loss_no_opt, loss_EN))
-                    print("Loss_attack:{:.3f}, Loss_L2:{:.3f}, Loss_L1:{:.3f}"\
+                    print("Loss_attack:{:.3f}, Loss_L2:{:.3f}, Loss_L1:{:.3f}"
                           .format(loss_attack, loss_L2_dist, loss_L1_dist))
-                    print("lab_score:{:.3f}, max_nontarget_lab_score:{:.3f}"\
+                    print("lab_score:{:.3f}, max_nontarget_lab_score:{:.3f}"
                           .format(target_score.item(), nontarget_score))
                     print("")
                     sys.stdout.flush()
@@ -161,7 +175,6 @@ class Attack:
                 if loss_EN < overall_best_dist and comp:
                     overall_best_dist = loss_EN
                     overall_best_attack = adv_img
-
 
             # Adjust the lower and upper bound based on the previously achieved
             # score of a c.
@@ -179,7 +192,6 @@ class Attack:
                     c_start = (lower_bound + upper_bound)/2
                 else:
                     c_start *= 10
-
 
         # Return the overall best attack between the different c values.
         return overall_best_attack

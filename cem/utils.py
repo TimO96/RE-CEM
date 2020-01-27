@@ -1,31 +1,31 @@
-## utils.py -- Initialization of autoencoder and various utility functions.
+# utils.py -- Initialization of autoencoder and various utility functions.
 
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-## Based on:
-## Copyright (C) 2018, IBM Corp
-##                     Chun-Chen Tu <timtu@umich.edu>
-##                     PaiShun Ting <paishun@umich.edu>
-##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
-import os
-import h5py
 import numpy as np
 
 from torch import save, eye, argmax
 from PIL import Image
+
 
 def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
                       lr_decay_step=1, max_step=100000, power=1):
     """
     Polynomial decay of learning rate.
     Input:
-        - optimizer     : initial optimizer
-        - init_lr       : initial learning rate
-        - step          : current iteration
-        - lr_decay_step : how frequently decay occurs, default is 1
-        - max_step      : number of maximum iterations
-        - power         : polymomial power
+        - optimizer         : initial optimizer
+        - init_lr           : initial learning rate
+        - step              : current iteration
+        - end_learning_rate : terminal learning rate
+        - lr_decay_step     : how frequently decay occurs, default is 1
+        - max_step          : number of maximum iterations
+        - power             : polymomial power
     Returns:
         - updated optimizer
     """
@@ -43,6 +43,7 @@ def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
         param_group['lr'] = lr
 
     return optimizer
+
 
 def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
              thres=0):
@@ -97,15 +98,18 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
 
     return pic
 
-def generate_data(data, id, target_lbl):
+
+def generate_data(data, id, target_label):
     """
     Return test data id and one hot target.
     Expects data to be MNIST Pytorch.
     """
     inputs = data.test_data[id]
-    targets = eye(data.test_labels.shape[1], device=inputs.device)[target_lbl]
+    targets = eye(data.test_labels.shape[1],
+                  device=inputs.device)[target_label]
 
     return inputs, targets
+
 
 def model_prediction(model, inputs):
     """
@@ -126,9 +130,10 @@ def model_prediction(model, inputs):
     pred_class = argmax(prob, dim=-1).item()
 
     # Pretty print of the output prediction.
-    prob_str = space([round(x,1) for x in prob.tolist()], pred_class)
+    prob_str = space([round(x, 1) for x in prob.tolist()], pred_class)
 
     return prob, pred_class, prob_str
+
 
 def space(list, best):
     """Pretty print a list, with coloured highest number."""
