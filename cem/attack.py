@@ -103,10 +103,9 @@ class Attack:
             # Set the image x_0 and x (x_0 + delta) and its slack type which
             # is to be optimized.
             orig_img = img.clone()
-            # adv_img = img.clone().fill_(0)
-            # adv_img_slack = img.clone().fill_(0).requires_grad_(True)
             adv_img = img.clone()
-            adv_img_slack = img.clone().requires_grad_(True)
+            noise = img.clone().normal_(0, 0.01)
+            adv_img_slack = (img.clone() + noise).requires_grad_(True)
 
             # Initialize optimizer.
             optimizer = SGD(params=[adv_img_slack], lr=self.lr_init)

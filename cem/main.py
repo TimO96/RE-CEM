@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from torchsummary import summary
 from torch import cuda, manual_seed, load, abs
 from torch.backends import cudnn
+from torch import min, max
 
 from .models.models import MNISTModel, AE
 from .data.data import MNIST
@@ -175,6 +176,7 @@ class CEM:
         mode:        {self.mode}                         \n\
         time (s):    {time}                              \n\
         kappa:       {self.kappa}                        \n\
+        gamma:       {self.gamma}                        \n\
         Original:    {self.label} {self.str}             \n\
         Delta:       {self.delta_label} {self.delta_str} \n\
         Adversarial: {self.adv_label} {self.adv_str}     \n"

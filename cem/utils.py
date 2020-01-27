@@ -45,16 +45,16 @@ def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
     return optimizer
 
 
-def save_img(img, name="output", channel=None, mode_img=None,
-             save_tensor=False, thres=0, intensity=None):
+def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
+             thres=0):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save image tensor.
     if save_tensor:
         save(img, name+'.pt')
 
     # Save image, invert MNIST read.
-    fig = np.around((img.cpu().data.numpy() + 0.5) * 255)
-    fig = fig.astype(np.uint8).squeeze()
+    raw_img = img.cpu().data.numpy()
+    fig = np.around((raw_img + 0.5) * 255).astype(np.uint8).squeeze()
 
     # Apply colors to indicate the PN and PP pixels.
     if channel:
@@ -64,18 +64,26 @@ def save_img(img, name="output", channel=None, mode_img=None,
             mode_img = np.around((mode_img.cpu().data.numpy() + 0.5) * 255)
             mode_img = mode_img.astype(np.uint8).squeeze()
 
-            # Thresholding tricks.
+            # Add original instensity to delta
+            mask = np.copy(fig)
+            mask[mode_img <= thres] = 0
+            mode_img += mask
+            assert np.max(mode_img) <= 255, f"{np.max(mode_img)} max > 255"
+
+            # Thresholding tricks, replace orig_img with color.
             fig[mode_img > thres] = 0
             mode_img[mode_img <= thres] = 0
-            if intensity:
-                mode_img[mode_img > thres] = intensity
+
+            # Increase intensity
+            intensity = (mode_img / 255 * 200 + 55)[mode_img > thres]
+            mode_img[mode_img > thres] = intensity
 
             # Convert overlay to RGB.
             nfig[channel] = mode_img
-            overlay = nfig.transpose(1, 2, 0)
+            overlay = nfig.transpose(1,2,0)
         else:
             nfig[channel] = fig
-            fig = nfig.transpose(1, 2, 0)
+            fig = nfig.transpose(1,2,0)
 
     pic = Image.fromarray(fig)
 
