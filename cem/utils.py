@@ -45,8 +45,8 @@ def poly_lr_scheduler(optimizer, init_lr, step, end_learning_rate=0.0001,
     return optimizer
 
 
-def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
-             thres=0):
+def save_img(img, name="output", channel=None, mode_img=None,
+             save_tensor=False, thres=0):
     """Save an MNIST image to location name, both as .pt and .png."""
     # Save image tensor.
     if save_tensor:
@@ -80,10 +80,10 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
 
             # Convert overlay to RGB.
             nfig[channel] = mode_img
-            overlay = nfig.transpose(1,2,0)
+            overlay = nfig.transpose(1, 2, 0)
         else:
             nfig[channel] = fig
-            fig = nfig.transpose(1,2,0)
+            fig = nfig.transpose(1, 2, 0)
 
     pic = Image.fromarray(fig)
 
@@ -99,12 +99,12 @@ def save_img(img, name="output", channel=None, mode_img=None, save_tensor=False,
     return pic
 
 
-def generate_data(data, id, target_label):
+def generate_data(data, data_id, target_label):
     """
     Return test data id and one hot target.
     Expects data to be MNIST Pytorch.
     """
-    inputs = data.test_data[id]
+    inputs = data.test_data[data_id]
     targets = eye(data.test_labels.shape[1],
                   device=inputs.device)[target_label]
 
@@ -135,17 +135,17 @@ def model_prediction(model, inputs):
     return prob, pred_class, prob_str
 
 
-def space(list, best):
+def space(print_list, best):
     """Pretty print a list, with coloured highest number."""
     liststr = '['
 
-    for i, number in enumerate(list):
+    for i, number in enumerate(print_list):
         num = ''
         # Negatives need extra space.
         if number > 0:
             num += ' '
         # Numbers between -10 and 10 need extra space
-        if number < 10 and number > -10:
+        if -10 < number < 10:
             num += ' '
         num += str(number)
 

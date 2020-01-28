@@ -14,8 +14,8 @@
 from torch import tensor, sum, abs, max, min
 
 
-def eval_loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
-              to_optimize=True):
+def eval_loss(model, mode, orig_img, adv, lab, autoencoder, c_start, kappa,
+              gamma, beta, to_optimize=True):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PP) or pertinent negatives (PN).
@@ -25,7 +25,7 @@ def eval_loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
         - orig_img      : image from dataset
         - adv           : adversarial image
         - lab           : label of the to be predicted target class
-        - AE            : autoencoder model for the adversarial attacks
+        - autoecoder    : autoencoder model for the adversarial attacks
         - c_start       : regularization coefficient (hyperparameter)
         - kappa         : confidence parameter to measure the distance
                           between target class and other classes
@@ -41,18 +41,18 @@ def eval_loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
     delta = orig_img - adv
 
     # Distance to the input data.
-    loss_L2, loss_L1 = sum(delta**2), sum(abs(delta))
-    elastic_dist = loss_L2 + loss_L1 * beta
+    l2_loss, l1_loss = sum(delta**2), sum(abs(delta))
+    elastic_dist = l2_loss + l1_loss * beta
 
     # Compute the total loss for the adversarial attack.
-    input = delta if (mode == "PP") else adv
+    nn_input = delta if (mode == "PP") else adv
 
     # Prediction before softmax of the model.
-    pred = model.predict(input.unsqueeze(0))[0]
+    pred = model.predict(nn_input.unsqueeze(0))[0]
 
     # Compute g(delta) which is the loss without the regularizers.
     loss_attack, lab_score, nonlab_score = loss_function(mode, pred, lab,
-                                                         kappa, c_start)
+                                                         kappa)
 
     # Scale the current current c parameter with loss function f and sum to
     # retrieve a scalar.
@@ -60,21 +60,21 @@ def eval_loss(model, mode, orig_img, adv, lab, AE, c_start, kappa, gamma, beta,
 
     # Based on the mode compute the last term of the objective function which
     # is the L2 reconstruction error of the autoencoder.
-    loss_AE = gamma
+    ae_loss = gamma
     if gamma:
-        loss_AE *= sum((AE(input.unsqueeze(0))[0] - input)**2)
+        ae_loss *= sum((autoencoder(nn_input.unsqueeze(0))[0] - nn_input)**2)
 
     # Determine whether the L1 loss term should be added when FISTA is not
     # optimized.
-    loss = c_loss_attack + loss_AE + loss_L2
+    loss = c_loss_attack + ae_loss + l2_loss
     if not to_optimize:
-        loss += loss_L1 * beta
+        loss += l1_loss * beta
 
-    return loss, elastic_dist, pred, c_loss_attack, loss_L2, loss_L1, \
+    return loss, elastic_dist, pred, c_loss_attack, l2_loss, l1_loss, \
         lab_score, nonlab_score
 
 
-def loss_function(mode, pred, target_lab, kappa, c_start):
+def loss_function(mode, pred, target_lab, kappa):
     """
     Compute the loss function component for the network to find either
     pertinent positives (PP) or pertinent negatives (PN).
@@ -84,7 +84,6 @@ def loss_function(mode, pred, target_lab, kappa, c_start):
         - target_lab    : label of the to be predicted target class
         - kappa         : confidence parameter to measure the distance
                           between target class and other classes
-        - c_start       : regularization coefficient (hyperparameter)
     Returns:
         - computed loss between the most probable class and the most probable
           class given the pertubation (delta) without regularizers.
@@ -97,12 +96,12 @@ def loss_function(mode, pred, target_lab, kappa, c_start):
 
     # Dependent on the mode subtract the score.
     if mode == "PP":
-        f = max_nonlab_score - lab_score
+        f_loss = max_nonlab_score - lab_score
     elif mode == "PN":
-        f = lab_score - max_nonlab_score
+        f_loss = lab_score - max_nonlab_score
 
     # Threshold the loss function f with a confidence parameter kappa.
-    loss_attack = max(tensor([0.], device=pred.device), kappa + f)
+    loss_attack = max(tensor([0.], device=pred.device), kappa + f_loss)
 
     return loss_attack, lab_score, max_nonlab_score
 
@@ -121,16 +120,15 @@ def fista(mode, beta, step, delta, slack, orig_img):
         - delta_update : new perturbation
         - slack_update : new slack vector
     """
-
     # Delta update.
     z = slack - orig_img
 
-    HALF = tensor(0.5).to(z.device)
+    half = tensor(0.5).to(z.device)
 
     # Apply FISTA conditions.
-    delta_update = (z > beta) * min((slack - beta), HALF) + \
+    delta_update = (z > beta) * min((slack - beta), half) + \
                    (abs(z) <= beta) * orig_img + \
-                   (z < -beta) * max((slack + beta), -HALF)
+                   (z < -beta) * max((slack + beta), -half)
 
     # Apply delta update (delta^(k+1)).
     delta_update = update(delta_update, orig_img, mode)
@@ -145,10 +143,8 @@ def fista(mode, beta, step, delta, slack, orig_img):
 
 def update(variable, orig_img, mode):
     """Update a variable based on mode and its difference with orig_img."""
-
     # Apply the shrinkage-thresholding update element-wise.
     z = variable - orig_img
     if mode == "PP":
         return (z <= 0) * variable + (z > 0) * orig_img
-    elif mode == "PN":
-        return (z > 0) * variable + (z <= 0) * orig_img
+    return (z > 0) * variable + (z <= 0) * orig_img

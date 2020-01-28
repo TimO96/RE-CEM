@@ -85,6 +85,7 @@ class Main:
         if mode is None:
             mode = self.mode
 
+
         explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode, **args)
         explain.run(self.data, image_id, show)
 
@@ -188,8 +189,9 @@ class CEM:
         delta = s.img - s.adv
 
         # Calculate probability classes for adversarial and delta image.
-        s.adv_pred, s.adv_label, s.adv_str = s.prediction(s.adv)
-        s.delta_pred, s.delta_label, s.delta_str = s.prediction(delta)
+        self.adv_pred, self.adv_label, self.adv_str = self.prediction(self.adv)
+        self.delta_pred, self.delta_label, self.delta_str = \
+            self.prediction(delta)
 
         # Perform appropriate scaling.
         s.delta = abs(delta) - 0.5

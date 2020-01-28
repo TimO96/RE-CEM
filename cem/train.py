@@ -49,7 +49,7 @@ class Dataset:
         """Train model with data."""
         optimizer = optim(self.model.parameters(), **optim_params)
 
-        for e in range(epochs):
+        for epoch in range(epochs):
             X = self.data.train_data
             batch_start, batch_end = 0, batch
 
@@ -59,17 +59,17 @@ class Dataset:
             while batch_start < len(X):
 
                 # Prepare new batch.
-                input = X[batch_start:batch_end]
+                model_input = X[batch_start:batch_end]
                 if self.supervised:
                     labels = r[batch_start:batch_end]
                 optimizer.zero_grad()
 
                 # Forward + backward + optimize.
-                preds = self.predict(input)
+                preds = self.predict(model_input)
                 if self.supervised:
                     lss = self.criterion(preds, labels)
                 else:
-                    lss = self.criterion(input, preds)
+                    lss = self.criterion(model_input, preds)
                 lss.backward()
                 optimizer.step()
 
@@ -79,7 +79,7 @@ class Dataset:
                         acc = Dataset.acc(argmax(preds, -1), labels)
                     else:
                         acc = 'NA'
-                    print(f"{e+1} [{batch_start}|{batch_end}]", end=' ')
+                    print(f"{epoch+1} [{batch_start}|{batch_end}]", end=' ')
                     print(f"loss: {round(lss.item(),3)} acc: {acc}")
 
                 # Next batch.
@@ -138,13 +138,13 @@ class Dataset:
         tlss, tacc = self.training()
         vlss, vacc = self.testing()
         print(f"Train: loss {tlss} acc {tacc}")
-        print(f"Test:  loss {tlss} acc {vacc}")
+        print(f"Test:  loss {vlss} acc {vacc}")
 
-    def save_model(self, path=None, dir='models'):
+    def save_model(self, path=None, save_dir='models'):
         """Store state dict."""
         if path is None:
-            system(f"mkdir -p {dir}")
-            path = f'{dir}/{self.name}.pt'
+            system(f"mkdir -p {save_dir}")
+            path = f'{save_dir}/{self.name}.pt'
         save(self.model.state_dict(), path)
         print(f'Stored to {path}')
 
@@ -165,7 +165,7 @@ def train_model(dset, unsupervised, seed=None, **kwargs):
     """Train a specific dataset."""
     dvc = 'cuda:0' if cuda.is_available() else 'cpu'
 
-    if dset == 'MNIST' or dset == 'FMNIST':
+    if dset in ('MNIST', 'FMNIST'):
         model = AE() if unsupervised else MNISTModel()
         dataset = Dataset(MNIST(dvc, dset), model, unsupervised, dvc,
                           seed=seed)
