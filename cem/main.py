@@ -179,14 +179,14 @@ class CEM:
         """Perform a prediction on the data based on the neural network."""
         return util.model_prediction(self.nn, data)
 
-    def attack(s, mode=None):
+    def attack(self, mode=None):
         """Perform the attack."""
         if not mode:
-            mode = s.mode
-        s.start = time.time()
+            mode = self.mode
+        self.start = time.time()
         # Create adversarial image from original image.
-        s.adv = s.cem_att.attack(s.img, s.target, mode).detach()
-        delta = s.img - s.adv
+        self.adv = self.cem_att.attack(self.img, self.target, mode).detach()
+        delta = self.img - self.adv
 
         # Calculate probability classes for adversarial and delta image.
         self.adv_pred, self.adv_label, self.adv_str = self.prediction(self.adv)
@@ -194,8 +194,8 @@ class CEM:
             self.prediction(delta)
 
         # Perform appropriate scaling.
-        s.delta = abs(delta) - 0.5
-        s.end = time.time()
+        self.delta = abs(delta) - 0.5
+        self.end = time.time()
 
     def match_labels(self, data, image_id, mode):
         """Return whether labels match or not"""
