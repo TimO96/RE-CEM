@@ -15,10 +15,10 @@ from torch import from_numpy
 
 
 class MNIST:
-    def __init__(self, dvc='cpu', data_type='MNIST', force=False):
+    def __init__(self, dvc='cpu', dataset='MNIST', force=False):
         """Load MNIST dataset, optionally force to download and overwrite."""
         # Create storage room.
-        self.data_type = type
+        self.datasete = type
         self.force = force
         self.dir = os.path.dirname(__file__) + '/' + type
 
@@ -29,10 +29,10 @@ class MNIST:
         # Retrieve MNIST files locally.
         self.url = \
             "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
-        if data_type == 'MNIST':
+        if dataset == 'MNIST':
             self.url = "http://yann.lecun.com/exdb/mnist/"
-        elif data_type != 'FMNIST':
-            raise f"Unkown dataset type {data_type}"
+        elif dataset != 'FMNIST':
+            raise f"Unkown dataset type {dataset}"
 
         n_train = 60000
         n_test = 10000
