@@ -79,8 +79,8 @@ class Attack:
             # Depending on the mode compare the score to the ground truth.
             if self.mode == "PP":
                 return score == target
-            elif self.mode == "PN":
-                return score != target
+
+            return score != target
 
         # Push image data to the available device.
         dvc = img.device
@@ -95,7 +95,7 @@ class Attack:
 
         # Find the best regularization coeffcient c by iterating through a
         # given number of steps.
-        for c_steps_idx in range(self.c_steps):
+        for _ in range(self.c_steps):
             # Initialize best distance and score. To be overwritten.
             current_step_best_dist = 1e10
             current_step_best_score = -1
@@ -146,8 +146,8 @@ class Attack:
                     adv_img_slack.data = adv_img_slack_update.data
 
                 # Estimate the loss after the FISTA update without optimizing.
-                loss_no_opt, loss_EN, pred, loss_attack, \
-                    loss_L2_dist, loss_L1_dist, target_score, \
+                loss_no_opt, en_loss, pred, loss_attack, \
+                    l2_loss, l1_loss, target_score, \
                     nontarget_score = eval_loss(self.model, self.mode,
                                                 orig_img, adv_img, lab,
                                                 self.AE, c_start, self.kappa,
@@ -157,9 +157,9 @@ class Attack:
                 if iteration % (self.max_iterations//10) == 0 and self.report:
                     print(f"iter: {iteration} const: {c_start}")
                     print("Loss_Overall:{:.3f}, Loss_Elastic:{:.3f}"
-                          .format(loss_no_opt, loss_EN))
+                          .format(loss_no_opt, en_loss))
                     print("Loss_attack:{:.3f}, Loss_L2:{:.3f}, Loss_L1:{:.3f}"
-                          .format(loss_attack, loss_L2_dist, loss_L1_dist))
+                          .format(loss_attack, l2_loss, l1_loss))
                     print("lab_score:{:.3f}, max_nontarget_lab_score:{:.3f}"
                           .format(target_score.item(), nontarget_score))
                     print("")
@@ -169,11 +169,11 @@ class Attack:
                 # distance obtained is higher than the best distance for the
                 # current c and for the overall best c.
                 comp = compare(pred, argmax(lab))
-                if loss_EN < current_step_best_dist and comp:
-                    current_step_best_dist = loss_EN
+                if en_loss < current_step_best_dist and comp:
+                    current_step_best_dist = en_loss
                     current_step_best_score = argmax(pred).item()
-                if loss_EN < overall_best_dist and comp:
-                    overall_best_dist = loss_EN
+                if en_loss < overall_best_dist and comp:
+                    overall_best_dist = en_loss
                     overall_best_attack = adv_img
 
             # Adjust the lower and upper bound based on the previously achieved
