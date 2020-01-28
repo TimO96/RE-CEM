@@ -1,12 +1,12 @@
-## main.py -- Main class in which the code can be run from its functions.
+# main.py -- Main class in which the code can be run from its functions.
 
-## (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-## Based on:
-## Copyright (C) 2018, IBM Corp
-##                     Chun-Chen Tu <timtu@umich.edu>
-##                     PaiShun Ting <paishun@umich.edu>
-##                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
+# Based on:
+# Copyright (C) 2018, IBM Corp
+#                     Chun-Chen Tu <timtu@umich.edu>
+#                     PaiShun Ting <paishun@umich.edu>
+#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 import os
 import random
@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 from torchsummary import summary
 from torch import cuda, manual_seed, load, abs
 from torch.backends import cudnn
-from torch import min, max
 
 from .models.models import MNISTModel, AE
 from .data.data import MNIST
@@ -24,9 +23,10 @@ from .attack import Attack
 from . import models
 from . import utils as util
 
+
 class Main:
     def __init__(self, type='MNIST', nn='MNISTModel.pt', ae='AE.pt',
-                 model_dir='', mode=None, seed=None):
+                 mode=None, seed=None):
         """Initialize the CEM controller.
             - type : dataset type; MNIST or FMNIST
             - mode : search mode; "PN" or "PP"
@@ -37,14 +37,14 @@ class Main:
         """
         dvc = 'cuda:0' if cuda.is_available() else 'cpu'
         type = type.upper()
-        assert type == 'MNIST' or type == 'FMNIST', f"Unsupported type {type}."
+        assert type in ('MNIST', 'FMNIST'), f"Unsupported type {type}."
 
         self.dvc = dvc
         self.data = MNIST(dvc, type)
         self.set_seed(seed)
 
         # Load autoencoder and the CNN for the MNIST dataset.
-        type_dir = os.path.dirname(models.__file__) + '/'+ type + '_'
+        type_dir = os.path.dirname(models.__file__) + '/' + type + '_'
         self.ae = AE(load(type_dir+ae, map_location=dvc)).to(dvc)
         self.nn = MNISTModel(load(type_dir+nn, map_location=dvc)).to(dvc)
 
@@ -62,7 +62,7 @@ class Main:
 
     def set_mode(self, mode):
         """Set internal mode."""
-        assert mode == "PP" or mode == "PN", "Expected mode 'PP' or 'PN'."
+        assert mode in ("PP", "PN"), "Expected mode 'PP' or 'PN'."
         self.mode = mode
 
     def model_summary(self):
@@ -73,7 +73,7 @@ class Main:
         print(str(self.nn))
         summary(self.nn, shape)
 
-    def explain(self, id, mode=None, object=False, show=True, **kwargs):
+    def explain(self, image_id, mode=None, show=True, **args):
         """Explain a specific id in mode.
 
         Input:
@@ -85,37 +85,36 @@ class Main:
         if mode is None:
             mode = self.mode
 
-        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode, **kwargs)
-        explain.run(self.data, id, show)
+        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode, **args)
+        explain.run(self.data, image_id, show)
 
-        if object:
-            return explain
-    
-    def quant_eval(self, ids=[], **kwargs):
+        return explain
+
+    def quant_eval(self, ids, **kwargs):
         """Quantative evaluation"""
-        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=self.mode, 
-                      report=False **kwargs)
+        assert iter(ids), "Ids should be an iterable."
+
+        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=self.mode,
+                      report=False, **kwargs)
 
         score = []
-
         for mode in ["PP", "PN"]:
-            for id in ids:
-                score.append(explain.match_labels(self.data, id, mode))
-        
-        return sum(score)/len(score)
+            for image_id in ids:
+                score.append(explain.match_labels(self.data, image_id, mode))
 
+        return sum(score)/len(score)
 
     def show_array(self, id, w=18.5, h=10.5, **kwargs):
         """Show arrayplot for id with paper combinations of arguments."""
-        f, ax = plt.subplots(1,5)
+        f, ax = plt.subplots(1, 5)
         f.set_size_inches(w, h)
         n = 1
 
         # Add adversarial PP/PN with gamma 0/100 to subplot.
         for mode in ['PP', 'PN']:
             for gamma in [0, 100]:
-                cem = self.explain(id, mode=mode, gamma=gamma, object=True,
-                                   show=False, report=False, **kwargs)
+                cem = self.explain(id, mode=mode, gamma=gamma, show=False,
+                                   report=False, **kwargs)
                 ax[n].imshow(cem.adv_pic)
                 ax[n].set_title(f"{mode}, $\gamma$={gamma} ({cem.adv_label})")
                 n += 1
@@ -128,9 +127,9 @@ class Main:
 
 
 class CEM:
-    def __init__(self, nn, ae, dvc, mode="PN", max_iter=1000, kappa=10, beta=1e-1, gamma=100,
-                  c_steps=9, c_init=10., lr_init=1e-2, report=True,
-                 store_dir='results/'):
+    def __init__(self, nn, ae, dvc, mode="PN", max_iter=1000, kappa=10,
+                 beta=1e-1, gamma=100, c_steps=9, c_init=10., lr_init=1e-2,
+                 report=True, store_dir='results/'):
         """Initializing the main CEM attack module.
         Inputs:
             - max_iter  : maximum iterations running the attack
@@ -160,59 +159,60 @@ class CEM:
 
         # Intialize CEM class for attack and perform PP and PN analysis.
         self.cem_att = Attack(self.nn, self.ae, lr_init=lr_init, c_init=c_init,
-                          c_steps=c_steps, max_iterations=max_iter, kappa=kappa,
-                          beta=beta, gamma=gamma, report=report)
+                              c_steps=c_steps, max_iterations=max_iter,
+                              kappa=kappa, beta=beta, gamma=gamma,
+                              report=report)
 
-    def set_image(self, data, id):
+    def set_image(self, data, image_id):
         """
         Load an image with id and retrieve ground truth label from
         the black box model f self.nn.
         """
-        self.id = id
-        image = data.test_data[id]
+        self.id = image_id
+        image = data.test_data[image_id]
         self.pred, self.label, self.str = self.prediction(image)
-        self.img, self.target = util.generate_data(data, id, self.label)
-        print(f"Image:{id}, infer label:{self.label}")
+        self.img, self.target = util.generate_data(data, image_id, self.label)
+        print(f"Image:{image_id}, infer label:{self.label}")
 
     def prediction(self, data):
         """Perform a prediction on the data based on the neural network."""
         return util.model_prediction(self.nn, data)
 
-    def attack(self, mode=None):
+    def attack(s, mode=None):
         """Perform the attack."""
         if not mode:
-            mode = self.mode
-        self.start = time.time()
+            mode = s.mode
+        s.start = time.time()
         # Create adversarial image from original image.
-        self.adv = self.cem_att.attack(self.img, self.target, mode).detach()
-        delta = self.img - self.adv
+        s.adv = s.cem_att.attack(s.img, s.target, mode).detach()
+        delta = s.img - s.adv
 
         # Calculate probability classes for adversarial and delta image.
-        self.adv_pred, self.adv_label, self.adv_str = self.prediction(self.adv)
-        self.delta_pred, self.delta_label, self.delta_str = \
-                                                          self.prediction(delta)
-        # Perform appropriate scaling.
-        self.delta = abs(delta) - 0.5
-        self.end = time.time()
+        s.adv_pred, s.adv_label, s.adv_str = s.prediction(s.adv)
+        s.delta_pred, s.delta_label, s.delta_str = s.prediction(delta)
 
-    def match_labels(self, data, id, mode):
+        # Perform appropriate scaling.
+        s.delta = abs(delta) - 0.5
+        s.end = time.time()
+
+    def match_labels(self, data, image_id, mode):
         """Return whether labels match or not"""
-        self.set_image(data, id)
+        self.set_image(data, image_id)
         self.attack(mode=mode)
 
         if mode == "PN":
             return self.adv_label != self.label
-        elif mode == "PP":
-            return self.delta_label == self.label
+
+        return self.delta_label == self.label
 
     def report(self):
         """Print report."""
         try:
             time = round(self.end - self.start, 1)
-        except:
+        except Exception:
             time = 'None'
 
-        INFO = f"\n\
+        info = f"\n\
         [INFO]\n\
         id:          {self.id}                           \n\
         mode:        {self.mode}                         \n\
@@ -222,21 +222,21 @@ class CEM:
         Original:    {self.label} {self.str}             \n\
         Delta:       {self.delta_label} {self.delta_str} \n\
         Adversarial: {self.adv_label} {self.adv_str}     \n"
-        print(INFO)
+        print(info)
 
     def store_images(s):
         """Store images to s.store directory."""
         sfx = f"id{s.id}_Orig{s.label}_Adv{s.adv_label}_Delta{s.delta_label}"
-        dir = f"{s.store}/{s.mode}_ID{s.id}_Gamma_{s.gamma}_Kappa_{s.kappa}"
+        s_dir = f"{s.store}/{s.mode}_ID{s.id}_Gamma_{s.gamma}_Kappa_{s.kappa}"
         os.system(f"mkdir -p {dir}")
 
-        s.img_pic = util.save_img(s.img, f"{dir}/Orig_{s.label}")
-        s.delta_pic = util.save_img(s.delta, f"{dir}/Delta_{sfx}", s.mode)
-        s.adv_pic = util.save_img(s.img, f"{dir}/Adv_{sfx}", s.mode, s.delta)
+        s.img_pic = util.save_img(s.img, f"{s_dir}/Orig_{s.label}")
+        s.delta_pic = util.save_img(s.delta, f"{s_dir}/Delta_{sfx}", s.mode)
+        s.adv_pic = util.save_img(s.img, f"{s_dir}/Adv_{sfx}", s.mode, s.delta)
 
     def show_images(self, w=18.5, h=10.5):
         """Show img, delta and adv next to each other."""
-        f, ax = plt.subplots(1,3)
+        f, ax = plt.subplots(1, 3)
         f.set_size_inches(w, h)
         ax[0].imshow(self.img_pic, cmap='gray', vmin=0, vmax=255)
         ax[1].imshow(self.delta_pic)
@@ -244,9 +244,9 @@ class CEM:
         [axis.set_axis_off() for axis in ax.ravel()]
         plt.show()
 
-    def run(self, data, id=2952, show=True):
+    def run(self, data, image_id=2952, show=True):
         """Run the algorithm for specific image."""
-        self.set_image(data, id)
+        self.set_image(data, image_id)
         self.attack()
         self.report()
         self.store_images()
