@@ -224,15 +224,20 @@ class CEM:
         Adversarial: {self.adv_label} {self.adv_str}     \n"
         print(info)
 
-    def store_images(s):
-        """Store images to s.store directory."""
-        sfx = f"id{s.id}_Orig{s.label}_Adv{s.adv_label}_Delta{s.delta_label}"
-        s_dir = f"{s.store}/{s.mode}_ID{s.id}_Gamma_{s.gamma}_Kappa_{s.kappa}"
+    def store_images(self):
+        """Store images to self.store directory."""
+        sfx = f"id{self.id}_Orig{self.label}_Adv{self.adv_label}\
+                _Delta{self.delta_label}"
+        dir = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}\
+                _Kappa_{self.kappa}"
         os.system(f"mkdir -p {dir}")
 
-        s.img_pic = util.save_img(s.img, f"{s_dir}/Orig_{s.label}")
-        s.delta_pic = util.save_img(s.delta, f"{s_dir}/Delta_{sfx}", s.mode)
-        s.adv_pic = util.save_img(s.img, f"{s_dir}/Adv_{sfx}", s.mode, s.delta)
+        self.img_pic = util.save_img(self.img, f"{dir}/Orig_{self.label}")
+        self.delta_pic = util.save_img(self.delta, 
+                                       f"{dir}/Delta_{sfx}", self.mode)
+        self.adv_pic = util.save_img(self.img, 
+                                     f"{dir}/Adv_{sfx}", 
+                                     self.mode, self.delta)
 
     def show_images(self, w=18.5, h=10.5):
         """Show img, delta and adv next to each other."""
