@@ -14,5 +14,6 @@ dependencies:
   - scipy=1.4.1
   - torchvision=0.4.2
   - pillow<7.0.0
+  - notebook=6.0.3
   - pip:
     - torchsummary==1.5.1

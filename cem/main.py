@@ -116,7 +116,12 @@ class Main:
                 cem = self.explain(id, mode=mode, gamma=gamma, show=False,
                                    report=False, **kwargs)
                 ax[n].imshow(cem.adv_pic)
-                ax[n].set_title(f"{mode}, $\gamma$={gamma} ({cem.adv_label})")
+                if mode == "PP":
+                    ax[n].set_title(f"{mode}, $\gamma$={gamma} " +
+                                    f"({cem.delta_label})")
+                elif mode == "PN":
+                    ax[n].set_title(f"{mode}, $\gamma$={gamma} " + 
+                                    f"({cem.adv_label})")
                 n += 1
 
         # Add original image.
@@ -227,10 +232,10 @@ class CEM:
 
     def store_images(self):
         """Store images to self.store directory."""
-        sfx = f"id{self.id}_Orig{self.label}_Adv{self.adv_label}\
-                _Delta{self.delta_label}"
-        s_dir = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}\
-                _Kappa_{self.kappa}"
+        sfx = f"id{self.id}_Orig{self.label}_Adv{self.adv_label}" + \
+            f"_Delta{self.delta_label}"
+        s_dir = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}" + \
+            f"_Kappa_{self.kappa}"
         os.system(f"mkdir -p {s_dir}")
 
         self.img_pic = util.save_img(self.img, f"{s_dir}/Orig_{self.label}")
