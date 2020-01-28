@@ -90,6 +90,20 @@ class Main:
 
         if object:
             return explain
+    
+    def quant_eval(self, ids=[], **kwargs):
+        """Quantative evaluation"""
+        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=self.mode, 
+                      report=False **kwargs)
+
+        score = []
+
+        for mode in ["PP", "PN"]:
+            for id in ids:
+                score.append(explain.match_labels(self.data, id, mode))
+        
+        return sum(score)/len(score)
+
 
     def show_array(self, id, w=18.5, h=10.5, **kwargs):
         """Show arrayplot for id with paper combinations of arguments."""
@@ -114,7 +128,7 @@ class Main:
 
 
 class CEM:
-    def __init__(self, nn, ae, dvc, mode="PN", max_iter=200, kappa=10, beta=1e-1, gamma=100,
+    def __init__(self, nn, ae, dvc, mode="PN", max_iter=1000, kappa=10, beta=1e-1, gamma=100,
                   c_steps=9, c_init=10., lr_init=1e-2, report=True,
                  store_dir='results/'):
         """Initializing the main CEM attack module.
@@ -132,7 +146,7 @@ class CEM:
             - store_dir : directory to store images
             - dvc       : tensor device (cuda or cpu)
         Returns:
-            - a MAIN object instance
+            - a CEM object instance
         """
         # Initialize dataset and class variables.
         self.dvc = dvc
@@ -145,7 +159,7 @@ class CEM:
         self.start, self.end = None, None
 
         # Intialize CEM class for attack and perform PP and PN analysis.
-        self.cem = Attack(self.nn, self.ae, lr_init=lr_init, c_init=c_init,
+        self.cem_att = Attack(self.nn, self.ae, lr_init=lr_init, c_init=c_init,
                           c_steps=c_steps, max_iterations=max_iter, kappa=kappa,
                           beta=beta, gamma=gamma, report=report)
 
@@ -164,11 +178,13 @@ class CEM:
         """Perform a prediction on the data based on the neural network."""
         return util.model_prediction(self.nn, data)
 
-    def attack(self):
+    def attack(self, mode=None):
         """Perform the attack."""
+        if not mode:
+            mode = self.mode
         self.start = time.time()
         # Create adversarial image from original image.
-        self.adv = self.cem.attack(self.img, self.target, self.mode).detach()
+        self.adv = self.cem_att.attack(self.img, self.target, mode).detach()
         delta = self.img - self.adv
 
         # Calculate probability classes for adversarial and delta image.
@@ -178,6 +194,16 @@ class CEM:
         # Perform appropriate scaling.
         self.delta = abs(delta) - 0.5
         self.end = time.time()
+
+    def match_labels(self, data, id, mode):
+        """Return whether labels match or not"""
+        self.set_image(data, id)
+        self.attack(mode=mode)
+
+        if mode == "PN":
+            return self.adv_label != self.label
+        elif mode == "PP":
+            return self.delta_label == self.label
 
     def report(self):
         """Print report."""
