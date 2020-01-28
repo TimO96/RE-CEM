@@ -96,7 +96,7 @@ class Attack:
 
         # Find the best regularization coeffcient c by iterating through a
         # given number of steps.
-        for c_steps_idx in range(self.c_steps):
+        for _ in range(self.c_steps):
             # Initialize best distance and score. To be overwritten.
             current_step_best_dist = 1e10
             current_step_best_score = -1
@@ -104,7 +104,7 @@ class Attack:
             # Set the image x_0 and x (x_0 + delta) and its slack type which
             # is to be optimized.
             orig_img = img.clone()
-            adv_img = img.clone() + img.clone().normal_(, 0.03)
+            adv_img = img.clone() + img.clone().normal_(0, 0.03)
             # adv_img = torch.nn.init.kaiming_normal_(img.clone())
             # adv_img = img.clone().fill_(0)
             adv_img_slack = (adv_img.clone()).requires_grad_(True)
