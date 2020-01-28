@@ -17,6 +17,8 @@ from torch.optim import SGD
 from .methods import fista, eval_loss
 from .utils import poly_lr_scheduler
 
+import torch
+
 
 class Attack:
     def __init__(self, model, AE, lr_init, c_init, c_steps, max_iterations,
@@ -102,7 +104,9 @@ class Attack:
             # Set the image x_0 and x (x_0 + delta) and its slack type which
             # is to be optimized.
             orig_img = img.clone()
-            adv_img = img.clone() + img.clone().normal_(0, 0.05)
+            adv_img = img.clone() + img.clone().normal_(, 0.03)
+            # adv_img = torch.nn.init.kaiming_normal_(img.clone())
+            # adv_img = img.clone().fill_(0)
             adv_img_slack = (adv_img.clone()).requires_grad_(True)
 
             # Initialize optimizer.
