@@ -85,7 +85,6 @@ class Main:
         if mode is None:
             mode = self.mode
 
-
         explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=mode, **args)
         explain.run(self.data, image_id, show)
 
@@ -130,7 +129,7 @@ class Main:
 class CEM:
     def __init__(self, nn, ae, dvc, mode="PN", max_iter=1000, kappa=10,
                  beta=1e-1, gamma=100, c_steps=9, c_init=10., lr_init=1e-2,
-                 report=True, store_dir='results/'):
+                 report=True, store_dir='results'):
         """Initializing the main CEM attack module.
         Inputs:
             - max_iter  : maximum iterations running the attack
@@ -179,14 +178,14 @@ class CEM:
         """Perform a prediction on the data based on the neural network."""
         return util.model_prediction(self.nn, data)
 
-    def attack(s, mode=None):
+    def attack(self, mode=None):
         """Perform the attack."""
         if not mode:
-            mode = s.mode
-        s.start = time.time()
+            mode = self.mode
+        self.start = time.time()
         # Create adversarial image from original image.
-        s.adv = s.cem_att.attack(s.img, s.target, mode).detach()
-        delta = s.img - s.adv
+        self.adv = self.cem_att.attack(self.img, self.target, mode).detach()
+        delta = self.img - self.adv
 
         # Calculate probability classes for adversarial and delta image.
         self.adv_pred, self.adv_label, self.adv_str = self.prediction(self.adv)
@@ -194,8 +193,8 @@ class CEM:
             self.prediction(delta)
 
         # Perform appropriate scaling.
-        s.delta = abs(delta) - 0.5
-        s.end = time.time()
+        self.delta = abs(delta) - 0.5
+        self.end = time.time()
 
     def match_labels(self, data, image_id, mode):
         """Return whether labels match or not"""
@@ -230,16 +229,15 @@ class CEM:
         """Store images to self.store directory."""
         sfx = f"id{self.id}_Orig{self.label}_Adv{self.adv_label}\
                 _Delta{self.delta_label}"
-        dir = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}\
+        s_dir = f"{self.store}/{self.mode}_ID{self.id}_Gamma_{self.gamma}\
                 _Kappa_{self.kappa}"
-        os.system(f"mkdir -p {dir}")
+        os.system(f"mkdir -p {s_dir}")
 
-        self.img_pic = util.save_img(self.img, f"{dir}/Orig_{self.label}")
-        self.delta_pic = util.save_img(self.delta, 
-                                       f"{dir}/Delta_{sfx}", self.mode)
-        self.adv_pic = util.save_img(self.img, 
-                                     f"{dir}/Adv_{sfx}", 
-                                     self.mode, self.delta)
+        self.img_pic = util.save_img(self.img, f"{s_dir}/Orig_{self.label}")
+        self.delta_pic = util.save_img(self.delta, f"{s_dir}/Delta_{sfx}",
+                                       self.mode)
+        self.adv_pic = util.save_img(self.img, f"{s_dir}/Adv_{sfx}", self.mode,
+                                     self.delta)
 
     def show_images(self, w=18.5, h=10.5):
         """Show img, delta and adv next to each other."""

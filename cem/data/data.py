@@ -20,7 +20,7 @@ class MNIST:
         # Create storage room.
         self.dataset = dataset
         self.force = force
-        self.dir = os.path.dirname(__file__) + '/' + type
+        self.dir = os.path.dirname(__file__) + '/' + dataset
 
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
