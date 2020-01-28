@@ -7,18 +7,18 @@
 
 # (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
 
-import numpy as np
 import os
 import gzip
 import urllib.request
+import numpy as np
 from torch import from_numpy
 
 
 class MNIST:
-    def __init__(self, dvc='cpu', type='MNIST', force=False):
+    def __init__(self, dvc='cpu', data_type='MNIST', force=False):
         """Load MNIST dataset, optionally force to download and overwrite."""
         # Create storage room.
-        self.type = type
+        self.data_type = type
         self.force = force
         self.dir = os.path.dirname(__file__) + '/' + type
 
@@ -29,10 +29,10 @@ class MNIST:
         # Retrieve MNIST files locally.
         self.url = \
             "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/"
-        if type == 'MNIST':
+        if data_type == 'MNIST':
             self.url = "http://yann.lecun.com/exdb/mnist/"
-        elif type != 'FMNIST':
-            raise f"Unkown dataset type {type}"
+        elif data_type != 'FMNIST':
+            raise f"Unkown dataset type {data_type}"
 
         n_train = 60000
         n_test = 10000

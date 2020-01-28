@@ -72,7 +72,6 @@ class AE(Module):
 
     def forward(self, data):
         """Predict alias."""
-
         return self.predict(data)
 
 

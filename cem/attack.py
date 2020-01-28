@@ -52,6 +52,7 @@ class Attack:
         self.beta = beta
         self.gamma = gamma
         self.report = report
+        self.mode = 'PN'
 
     def attack(self, img, lab, mode):
         """Perform attack on img.
