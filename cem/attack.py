@@ -1,4 +1,4 @@
-# attack.py -- attack class in which adversarial attacks are performed to
+# attack.py -- Attack class in which adversarial attacks are performed to
 #              analyze the target pertinent instance.
 
 # (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
@@ -26,19 +26,19 @@ class Attack:
         Moreover, CEM is used to perform adversarial attacks with the
         autoencoder.
         Input:
-            - model          : Pytorch NN prediction model
-            - AE             : autoencoder model for the adversarial attacks
-            - lr_init        : starting learning rate for the optimizer
-            - c_init         : starting weight constant of the loss function
-            - c_steps        : number of iterations in which the constant c
-                               is adjusted
-            - max_iterations : maximum number of iterations for the analysis
-            - kappa          : confidence parameter to measure the distance
-                               between target class and other classes
-            - beta           : regularization weight for the L1 loss term
-            - gamma          : regularization weight for autoencoder loss
-                               function
-            - report         : print iterations
+            - model              : Pytorch NN prediction model
+            - AE                 : autoencoder model for the adversarial attacks
+            - lr_init            : starting learning rate for the optimizer
+            - c_init             : starting weight constant of the loss function
+            - c_steps            : number of iterations in which the constant c
+                                   is adjusted
+            - max_iterations     : maximum number of iterations for the analysis
+            - kappa              : confidence parameter to measure the distance
+                                   between target class and other classes
+            - beta               : regularization weight for the L1 loss term
+            - gamma              : regularization weight for autoencoder loss
+                                   function
+            - report             : print iterations
         """
 
         # Define model variables.
@@ -68,7 +68,6 @@ class Attack:
 
         def compare(score, target):
             """Compare score with target label given the mode."""
-
             # Convert score to single number.
             if not isinstance(score, (float, int)):
                 score = score.clone()
@@ -103,9 +102,8 @@ class Attack:
             # Set the image x_0 and x (x_0 + delta) and its slack type which
             # is to be optimized.
             orig_img = img.clone()
-            adv_img = img.clone()
-            noise = img.clone().normal_(0, 0.01)
-            adv_img_slack = (img.clone() + noise).requires_grad_(True)
+            adv_img = img.clone() + img.clone().normal_(0, 0.05)
+            adv_img_slack = (adv_img.clone()).requires_grad_(True)
 
             # Initialize optimizer.
             optimizer = SGD(params=[adv_img_slack], lr=self.lr_init)
@@ -115,7 +113,7 @@ class Attack:
                 # perform the attack
                 optimizer.zero_grad()
                 optimizer = poly_lr_scheduler(optimizer, self.lr_init,
-                                              iteration, power=0.5,
+                                              iteration, 0., 0.5,
                                               max_step=self.max_iterations)
 
                 # Compute the criterion which is used to optimize.
