@@ -18,7 +18,7 @@ class MNIST:
     def __init__(self, dvc='cpu', dataset='MNIST', force=False):
         """Load MNIST dataset, optionally force to download and overwrite."""
         # Create storage room.
-        self.datasete = type
+        self.dataset = dataset
         self.force = force
         self.dir = os.path.dirname(__file__) + '/' + type
 
