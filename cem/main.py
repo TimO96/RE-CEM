@@ -52,7 +52,7 @@ class Main:
             self.set_mode(mode)
 
     def set_seed(self, seed):
-        """Set the random seeds (numpy and pytorch) for reproducibility."""
+        """Set the random seeds (python and pytorch) for reproducibility."""
         if seed is not None:
             random.seed(seed)
             manual_seed(seed)
@@ -74,11 +74,13 @@ class Main:
         summary(self.nn, shape)
 
     def explain(self, id, mode=None, object=False, show=True, **kwargs):
-        """... .
+        """Explain a specific id in mode.
 
         Input:
-        - id        : dataset image id
-        - mode      : search mode; "PN" or "PP"
+        - id     : dataset image id
+        - mode   : search mode; "PN" or "PP"
+        - object : return CEM object
+        - show   : show explained images
         """
         if mode is None:
             mode = self.mode
@@ -104,16 +106,24 @@ class Main:
 
 
     def show_array(self, id, w=18.5, h=10.5, **kwargs):
+        """Show arrayplot for id with paper combinations of arguments."""
         f, ax = plt.subplots(1,5)
         f.set_size_inches(w, h)
         n = 1
+
+        # Add adversarial PP/PN with gamma 0/100 to subplot.
         for mode in ['PP', 'PN']:
             for gamma in [0, 100]:
                 cem = self.explain(id, mode=mode, gamma=gamma, object=True,
                                    show=False, report=False, **kwargs)
                 ax[n].imshow(cem.adv_pic)
+                ax[n].set_title(f"{mode}, $\gamma$={gamma} ({cem.adv_label})")
                 n += 1
+
+        # Add original image.
         ax[0].imshow(cem.img_pic, cmap='gray', vmin=0, vmax=255)
+        ax[0].set_title(f"Original image ({cem.label})")
+        [axis.set_axis_off() for axis in ax.ravel()]
         plt.show()
 
 
@@ -138,12 +148,8 @@ class CEM:
         Returns:
             - a CEM object instance
         """
-        # Initialize CPU/GPU device and set seed for reproducibility.
-        # dvc = 'cuda:0' if cuda.is_available() else 'cpu'
-        self.dvc = dvc
-        # self.set_seed(seed)
-
         # Initialize dataset and class variables.
+        self.dvc = dvc
         self.ae = ae
         self.nn = nn
         self.mode = mode
@@ -151,7 +157,6 @@ class CEM:
         self.gamma = gamma
         self.store = store_dir
         self.start, self.end = None, None
-        self.mode = mode
 
         # Intialize CEM class for attack and perform PP and PN analysis.
         self.cem_att = Attack(self.nn, self.ae, lr_init=lr_init, c_init=c_init,
@@ -218,7 +223,6 @@ class CEM:
         Delta:       {self.delta_label} {self.delta_str} \n\
         Adversarial: {self.adv_label} {self.adv_str}     \n"
         print(INFO)
-        # sys.stdout.flush()
 
     def store_images(s):
         """Store images to s.store directory."""
@@ -237,6 +241,7 @@ class CEM:
         ax[0].imshow(self.img_pic, cmap='gray', vmin=0, vmax=255)
         ax[1].imshow(self.delta_pic)
         ax[2].imshow(self.adv_pic)
+        [axis.set_axis_off() for axis in ax.ravel()]
         plt.show()
 
     def run(self, data, id=2952, show=True):
@@ -247,11 +252,3 @@ class CEM:
         self.store_images()
         if show:
             self.show_images()
-
-if __name__ == "__main__":
-    m = Main(mode='PP')
-    m.model_summary()
-    m.explain(12, gamma=0)
-    m.explain(12, gamma=100)
-    m.set_mode('PN')
-    m.explain(12, gamma=100)
