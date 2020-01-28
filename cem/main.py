@@ -94,7 +94,7 @@ class Main:
     def quant_eval(self, ids=[], **kwargs):
         """Quantative evaluation"""
         explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=self.mode, 
-                      report=False **kwargs)
+                      report=False, **kwargs)
 
         score = []
 
