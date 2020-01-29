@@ -94,8 +94,8 @@ class Main:
         """Quantative evaluation"""
         assert iter(ids), "Ids should be an iterable."
 
-        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, mode=self.mode,
-                      report=False, **kwargs)
+        explain = CEM(nn=self.nn, ae=self.ae, dvc=self.dvc, report=False,
+                      **kwargs)
 
         score = []
         for mode in ["PP", "PN"]:
