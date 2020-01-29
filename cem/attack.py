@@ -17,8 +17,6 @@ from torch.optim import SGD
 from .methods import fista, eval_loss
 from .utils import poly_lr_scheduler
 
-import torch
-
 
 class Attack:
     def __init__(self, model, AE, lr_init, c_init, c_steps, max_iterations,
@@ -28,19 +26,19 @@ class Attack:
         Moreover, CEM is used to perform adversarial attacks with the
         autoencoder.
         Input:
-            - model              : Pytorch NN prediction model
-            - AE                 : autoencoder model for the adversarial attacks
-            - lr_init            : starting learning rate for the optimizer
-            - c_init             : starting weight constant of the loss function
-            - c_steps            : number of iterations in which the constant c
-                                   is adjusted
-            - max_iterations     : maximum number of iterations for the analysis
-            - kappa              : confidence parameter to measure the distance
-                                   between target class and other classes
-            - beta               : regularization weight for the L1 loss term
-            - gamma              : regularization weight for autoencoder loss
-                                   function
-            - report             : print iterations
+            - model          : Pytorch NN prediction model
+            - AE             : autoencoder model for the adversarial attacks
+            - lr_init        : starting learning rate for the optimizer
+            - c_init         : starting weight constant of the loss function
+            - c_steps        : number of iterations in which the constant c is
+                               adjusted
+            - max_iterations : maximum number of iterations for the analysis
+            - kappa          : confidence parameter to measure the distance
+                               between target class and other classes
+            - beta           : regularization weight for the L1 loss term
+            - gamma          : regularization weight for autoencoder loss
+                               function
+            - report         : print iterations
         """
 
         # Define model variables.
@@ -54,7 +52,7 @@ class Attack:
         self.beta = beta
         self.gamma = gamma
         self.report = report
-        self.mode = 'PN'
+        self.mode = None
 
     def attack(self, img, lab, mode):
         """Perform attack on img.
@@ -70,7 +68,11 @@ class Attack:
         self.mode = mode
 
         def compare(score, target):
-            """Compare score with target label given the mode."""
+            """
+            Compare score with target label given the mode, ensure distance
+            of kappa between target and max_nontarget and ensure loss_attack
+            is thereby zero.
+            """
             # Convert score to single number.
             if not isinstance(score, (float, int)):
                 score = score.clone()
@@ -149,13 +151,13 @@ class Attack:
                     adv_img_slack.data = adv_img_slack_update.data
 
                 # Estimate the loss after the FISTA update without optimizing.
-                loss_no_opt, en_loss, pred, loss_attack, \
-                    l2_loss, l1_loss, target_score, \
-                    nontarget_score = eval_loss(self.model, self.mode,
-                                                orig_img, adv_img, lab,
-                                                self.AE, c_start, self.kappa,
-                                                self.gamma, self.beta,
-                                                to_optimize=False)
+                loss_no_opt, en_loss, pred, loss_attack, l2_loss, l1_loss,\
+                lab_score, nonlab_score = eval_loss(self.model, self.mode,
+                                                    orig_img, adv_img, lab,
+                                                    self.AE, c_start,
+                                                    self.kappa, self.gamma,
+                                                    self.beta,
+                                                    to_optimize=False)
 
                 if iteration % (self.max_iterations//10) == 0 and self.report:
                     print(f"iter: {iteration} const: {c_start}")
@@ -164,7 +166,7 @@ class Attack:
                     print("Loss_attack:{:.3f}, Loss_L2:{:.3f}, Loss_L1:{:.3f}"
                           .format(loss_attack, l2_loss, l1_loss))
                     print("lab_score:{:.3f}, max_nontarget_lab_score:{:.3f}"
-                          .format(target_score.item(), nontarget_score))
+                          .format(lab_score.item(), nonlab_score))
                     print("")
                     sys.stdout.flush()
 

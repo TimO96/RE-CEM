@@ -5,6 +5,6 @@ import random
 
 m = cem.Main(seed=121, type='MNIST')
 
-print(m.quant_eval(ids=random.sample(range(10000), 200)))
+m.show_array(12, max_iter=1000)
 
-
+# print(m.quant_eval(ids=random.sample(range(10000), 200)))
