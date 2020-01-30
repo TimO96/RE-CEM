@@ -15,5 +15,5 @@ See `example.ipynb` for example usage of the `cem` class. Alternatively, `main.p
 ```
 
 ## Acknowledgments
-This project was supervised by (Maurice (Morris) Fank)[https://morris-frank.dev/]
+This project was supervised by [Maurice (Morris) Fank](https://morris-frank.dev/)
 
