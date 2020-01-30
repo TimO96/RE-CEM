@@ -1,2 +1,19 @@
-# FACTAI
-FACTAI project UvA
+# FACTAI CEM-I
+FACTAI project UvA 
+
+## Authors
+- Tim Ottens (11147598)
+- Stefan Klut (11331720)
+- Thomas van Osch (11248815)
+- Mattijs Blankesteijn (11318422)
+
+## Instructions
+See `example.ipynb` for example usage of the `cem` class. Alternatively, `main.py` can be called with the following arguments:
+
+```
+// dump of: main.py -h 
+```
+
+## Acknowledgments
+This project was supervised by (Maurice (Morris) Fank)[https://morris-frank.dev/]
+

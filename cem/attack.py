@@ -17,6 +17,7 @@ from torch.optim import SGD
 from .methods import fista, eval_loss
 from .utils import poly_lr_scheduler
 
+import torch
 
 class Attack:
     def __init__(self, model, AE, lr_init, c_init, c_steps, max_iterations,
