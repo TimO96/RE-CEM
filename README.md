@@ -1,5 +1,5 @@
 # FACTAI CEM-I
-FACTAI project UvA 
+> [RE] Explanations based on the Missing: Towards Contrastive Explanations with Pertinent Negatives
 
 ## Authors
 - Tim Ottens (11147598)
@@ -15,5 +15,5 @@ See `example.ipynb` for example usage of the `cem` class. Alternatively, `main.p
 ```
 
 ## Acknowledgments
-This project was supervised by [Maurice (Morris) Fank](https://morris-frank.dev/)
+This project was supervised by [Maurice (Morris) Frank](https://morris-frank.dev/).
 
