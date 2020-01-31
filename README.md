@@ -1,4 +1,4 @@
-# FACTAI CEM-I
+# FACT-AI CEM-I
 > [RE] Explanations based on the Missing: Towards Contrastive Explanations with Pertinent Negatives
 
 ## Authors
