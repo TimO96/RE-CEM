@@ -9,15 +9,16 @@
 #                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 from argparse import ArgumentParser
-from os import system
+from os import system, path
 
 from torch import mean, argmax, save, cuda, manual_seed
 from torch.optim import SGD, Adam, Adadelta, Adagrad
 from torch.nn import CrossEntropyLoss, MSELoss
 from torch.backends import cudnn
 
-from models.models import MNISTModel, AE
-from data.data import MNIST
+from . import models
+from .models.models import MNISTModel, AE
+from .data.data import MNIST
 
 
 class Dataset:
@@ -25,7 +26,7 @@ class Dataset:
                  criterion=None, seed=None):
         """Initialize a dataset."""
         self.data = data
-        self.name = data.type + "_" + model.__class__.__name__
+        self.name = data.dataset + "_" + model.__class__.__name__
         self.model = model.to(device)
         self.device = device
         self.supervised = not unsupervised
@@ -140,13 +141,15 @@ class Dataset:
         print(f"Train: loss {tlss} acc {tacc}")
         print(f"Test:  loss {vlss} acc {vacc}")
 
-    def save_model(self, path=None, save_dir='models'):
+    def save_model(self, s_path=None, save_dir=None):
         """Store state dict."""
-        if path is None:
+        if save_dir is None:
+            save_dir = path.dirname(models.__file__)
+        if s_path is None:
             system(f"mkdir -p {save_dir}")
-            path = f'{save_dir}/{self.name}.pt'
-        save(self.model.state_dict(), path)
-        print(f'Stored to {path}')
+            s_path = f'{save_dir}/{self.name}.pt'
+        save(self.model.state_dict(), s_path)
+        print(f'Stored to {s_path}')
 
 
 def search(dset, unsupervised):
