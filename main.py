@@ -1,8 +1,9 @@
 # main.py -- main file with arguments
 # (C) 2020 UvA FACT AI
 
-import cem
 import random
+import cem
+
 
 if __name__ == "__main__":
     import argparse
