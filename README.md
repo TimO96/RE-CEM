@@ -1,7 +1,11 @@
 # FACT-AI CEM-I
 > [RE] Explanations based on the Missing: Towards Contrastive Explanations with Pertinent Negatives
 
-Code for the Pytorch reproduction of “[Explanations based on the Missing: Towards Contrastive Explanations with Pertinent Negatives](https://arxiv.org/abs/1802.07623)”
+Reproducing
+> Amit Dhurandhar, Pin-Yu Chen, Ronny Luss, Chun-Chen Tu, Paishun Ting,
+Karthikeyan Shanmugam, and Payel Das. 2018. Explanations based on
+the Missing: Towards Contrastive Explanations with Pertinent Negatives.
+[arXiv:cs.AI/1802.07623](https://arxiv.org/abs/1802.07623)
 
 ## Authors
 - Tim Ottens (11147598) [t_im1996@live.nl](mailto:t_im1996@live.nl)
