@@ -2,10 +2,10 @@
 > [RE] Explanations based on the Missing: Towards Contrastive Explanations with Pertinent Negatives
 
 ## Authors
-- Tim Ottens (11147598)
-- Stefan Klut (11331720)
-- Thomas van Osch (11248815)
-- Mattijs Blankesteijn (11318422)
+- Tim Ottens (11147598) [t_im1996@live.nl](mailto:t_im1996@live.nl)
+- Stefan Klut (11331720) [stefanklut12@gmail.com](mailto:stefanklut12@gmail.com)
+- Thomas van Osch (11248815) [t.vanosch@hotmail.com](mailto:t.vanosch@hotmail.com)
+- Mattijs Blankesteijn (11318422) [re_cem@mattijsblankesteijn.nl](mailto:re_cem@mattijsblankesteijn.nl)
 
 ## Instructions
 See `example.ipynb` for example usage of the `cem` class. Alternatively, `main.py` can be called with the following arguments:
