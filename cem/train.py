@@ -1,12 +1,7 @@
 # train.py -- Initialize Dataset class with training functionalities.
 
-# (C) 2020 Changes by UvA FACT AI group [Pytorch conversion]
+# (C) 2020 Changes by UvA FACT AI group CEM-I
 
-# Based on:
-# Copyright (C) 2018, IBM Corp
-#                     Chun-Chen Tu <timtu@umich.edu>
-#                     PaiShun Ting <paishun@umich.edu>
-#                     Pin-Yu Chen <Pin-Yu.Chen@ibm.com>
 
 from argparse import ArgumentParser
 from os import system, path
