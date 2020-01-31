@@ -2,7 +2,6 @@
 
 # (C) 2020 Changes by UvA FACT AI group CEM-I
 
-
 from argparse import ArgumentParser
 from os import system, path
 
