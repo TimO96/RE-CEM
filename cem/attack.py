@@ -17,7 +17,6 @@ from torch.optim import SGD
 from .methods import fista, eval_loss
 from .utils import poly_lr_scheduler
 
-import torch
 
 class Attack:
     def __init__(self, model, AE, lr_init, c_init, c_steps, max_iterations,
@@ -109,8 +108,6 @@ class Attack:
             # is to be optimized.
             orig_img = img.clone()
             adv_img = img.clone() + img.clone().normal_(0, 0.03)
-            # adv_img = torch.nn.init.kaiming_normal_(img.clone())
-            # adv_img = img.clone().fill_(0)
             adv_img_slack = (adv_img.clone()).requires_grad_(True)
 
             # Initialize optimizer.
@@ -153,12 +150,12 @@ class Attack:
 
                 # Estimate the loss after the FISTA update without optimizing.
                 loss_no_opt, en_loss, pred, loss_attack, l2_loss, l1_loss,\
-                lab_score, nonlab_score = eval_loss(self.model, self.mode,
-                                                    orig_img, adv_img, lab,
-                                                    self.AE, c_start,
-                                                    self.kappa, self.gamma,
-                                                    self.beta,
-                                                    to_optimize=False)
+                    lab_score, nonlab_score = eval_loss(self.model, self.mode,
+                                                        orig_img, adv_img, lab,
+                                                        self.AE, c_start,
+                                                        self.kappa, self.gamma,
+                                                        self.beta,
+                                                        to_optimize=False)
 
                 if iteration % (self.max_iterations//10) == 0 and self.report:
                     print(f"iter: {iteration} const: {c_start}")

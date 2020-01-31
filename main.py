@@ -1,4 +1,10 @@
 # main.py -- main file with arguments
+
+# Mathijs Blankesteijn (11318422)
+# Stefan Klut (11331720)
+# Thomas van Osch (11248815)
+# Tim Ottens (11147598)
+
 # (C) 2020 UvA FACT AI
 
 import random
@@ -42,7 +48,7 @@ if __name__ == "__main__":
         else:
             train_model(args.dataset, args.unsupervised, stats=1000)
 
-    # Perform explanation
+    # Perform explanation or quantative evaluation
     m = cem.Main(seed=args.seed, type=args.dataset)
     if args.quant_eval:
         print(m.quant_eval(ids=random.sample(range(10000), args.n_samples)))

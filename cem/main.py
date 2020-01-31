@@ -120,7 +120,7 @@ class Main:
                     ax[n].set_title(f"{mode}, $\gamma$={gamma} " +
                                     f"({cem.delta_label})")
                 elif mode == "PN":
-                    ax[n].set_title(f"{mode}, $\gamma$={gamma} " + 
+                    ax[n].set_title(f"{mode}, $\gamma$={gamma} " +
                                     f"({cem.adv_label})")
                 n += 1
 
